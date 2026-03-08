@@ -265,3 +265,96 @@ INSERT INTO stock (project_id, org_id, lot_number, bedrooms, bathrooms, car_spac
 - Build passes with zero errors before committing
 - Commit message: "checkpoint 3: projects & stock with Supabase"
 - Push to main (Vercel auto-deploys)
+
+## Checkpoint 4 — Contacts & Agents (CURRENT)
+
+### Database — ALREADY CREATED (do NOT run SQL again)
+Tables: `agents`, `contacts`, `contact_stock`, `agent_projects`
+All have RLS enabled with permissive policies for preview.
+Stock table now has `agent_id` FK to agents.
+
+### Contact Classification
+- **Prospect**: Pre-exchange buyer (interested, EOI, browsing)
+- **Customer**: Exchanged or settled buyer (committed)
+- Auto-classify based on linked stock status: if any linked stock is "Exchanged", "Under Contract", or "Settled" → customer
+- Manual override allowed
+
+### What To Build
+
+1. **Data access layer** additions:
+   - `src/lib/data/agents.ts` — getAgents(), getAgent(id), createAgent(), updateAgent(), getAgentStats(id)
+   - `src/lib/data/contacts.ts` — getContacts(), getContact(id), createContact(), updateContact(), getContactsByTag(), getContactsForMailGroup()
+   - Server actions for create/update agents and contacts
+
+2. **Contacts page** (`/contacts`) — add to SALES section in sidebar:
+   - Tab bar: All | Prospects | Customers
+   - Contact list/table with columns: Name, Email, Phone, Classification (badge), Source, Linked Lots, Tags, Added
+   - Classification badges: Prospect (gold #D4A855), Customer (emerald #1A9E6F)
+   - Search bar (filter by name, email, phone)
+   - "Add Contact" button → modal
+   - Click row → contact detail page
+
+3. **Contact detail page** (`/contacts/[id]`):
+   - Full profile card with all personal details
+   - ID verification section (type, number, expiry, country)
+   - Address section
+   - Employment section
+   - Solicitor section
+   - Linked lots section (which stock items they're attached to, with status)
+   - Source & attribution
+   - Communication preferences & marketing consent toggle
+   - Tags (editable, add/remove)
+   - Notes
+   - Activity timeline (future — placeholder for now)
+   - Edit button → opens edit modal with all fields
+
+4. **Add/Edit Contact modal**:
+   - Tabbed form: Personal | Address | ID & Employment | Legal | Preferences
+   - Personal: first name, last name, preferred name, email, phone, secondary phone, DOB, nationality, country of residence
+   - Address: residential address fields + "postal address different?" toggle
+   - ID & Employment: id type dropdown, id number, id expiry, id country, employer, occupation, company
+   - Legal: solicitor name, firm, email, phone
+   - Preferences: preferred contact method, marketing consent checkbox, source dropdown, referring agent dropdown, tags input
+   - Form validation (first name + last name required, email format if provided)
+   - Classification dropdown (prospect/customer)
+
+5. **Agents page** (`/agents`) — replace placeholder:
+   - Agent cards or table: Name, Company, Phone, License, Status (active/inactive), Assigned Projects, Lots Sold
+   - "Add Agent" button → modal
+   - Click → agent detail page
+
+6. **Agent detail page** (`/agents/[id]`):
+   - Profile card (name, company, email, phone, license)
+   - Commission info
+   - Assigned projects list
+   - Stock assigned to this agent (table)
+   - Performance summary: total lots, by status, total value
+   - Edit button
+
+7. **Add/Edit Agent modal**:
+   - Fields: first name, last name, preferred name, email, phone, secondary phone, company, agency, license number, license expiry, commission type (% or flat), commission rate, status, notes
+   - Assign to projects (multi-select checkboxes)
+
+8. **Mail Group Builder** (`/contacts/groups` or section on contacts page):
+   - Filter contacts by: project, classification, tags, source, marketing consent
+   - Show count of matching contacts
+   - "Export Email List" button (CSV download with name + email)
+   - Preview list of matching contacts
+
+9. **Sidebar navigation updates**:
+   - SALES section: Stock, Pipeline, **Contacts**
+   - MANAGEMENT section: **Agents**, Documents, Reports
+
+10. **Bottom tabs update**:
+    - Replace current tabs or add Contacts to quick access
+
+### IMPORTANT:
+- Contacts linked to stock with status "Exchanged", "Under Contract", or "Settled" should show as "Customer"
+- Contacts with only "Available" or "EOI" linked stock (or no linked stock) show as "Prospect"
+- The classification stored in DB can be manually set, but the UI should show a computed classification too
+- Tags are TEXT[] in Postgres — use array operations
+- Agent dropdown in stock forms should now pull from real agents table
+- Keep all existing pages working (dashboard, projects, stock)
+- Build passes with zero errors
+- Commit message: "checkpoint 4: contacts & agents"
+- Push to main
