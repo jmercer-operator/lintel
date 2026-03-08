@@ -19,6 +19,11 @@
   --color-body: #2D3B32;
   --color-heading: #151E18;
 
+  /* Extended palette */
+  --color-plum: #7B3FA0;
+  --color-forest: #2D8C5A;
+  --color-terracotta: #E07858;
+
   /* Semantic */
   --color-success: #34B764;
   --color-warning: #E8A840;
