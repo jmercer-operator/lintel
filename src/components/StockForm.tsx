@@ -4,16 +4,17 @@ import { useState, useTransition } from "react";
 import { Input } from "@/components/Input";
 import { Button } from "@/components/Button";
 import { createStockAction, updateStockAction } from "@/lib/actions";
-import { ALL_STATUSES, type StockItem } from "@/lib/types";
+import { ALL_STATUSES, type StockItem, type Agent } from "@/lib/types";
 
 interface StockFormProps {
   projectId: string;
   stock?: StockItem | null;
+  agents?: Agent[];
   onSuccess: () => void;
   onCancel: () => void;
 }
 
-export function StockForm({ projectId, stock, onSuccess, onCancel }: StockFormProps) {
+export function StockForm({ projectId, stock, agents, onSuccess, onCancel }: StockFormProps) {
   const [isPending, startTransition] = useTransition();
   const [error, setError] = useState<string | null>(null);
 
@@ -145,12 +146,29 @@ export function StockForm({ projectId, stock, onSuccess, onCancel }: StockFormPr
         />
       </div>
 
-      <Input
-        label="Agent"
-        name="agent_name"
-        defaultValue={stock?.agent_name ?? ""}
-        placeholder="e.g. Sarah M."
-      />
+      {agents && agents.length > 0 ? (
+        <div className="flex flex-col gap-1.5">
+          <label className="text-sm font-medium text-heading">Agent</label>
+          <select
+            name="agent_name"
+            defaultValue={stock?.agent_name || ""}
+            className="w-full px-3.5 py-2.5 rounded-[var(--radius-input)] border border-border bg-white text-body text-sm hover:border-secondary focus:border-emerald-primary focus:ring-1 focus:ring-emerald-primary focus:outline-none transition-colors cursor-pointer"
+          >
+            <option value="">No agent</option>
+            {agents.map((a) => {
+              const name = `${a.first_name} ${a.last_name.charAt(0)}.`;
+              return <option key={a.id} value={name}>{a.first_name} {a.last_name}</option>;
+            })}
+          </select>
+        </div>
+      ) : (
+        <Input
+          label="Agent"
+          name="agent_name"
+          defaultValue={stock?.agent_name ?? ""}
+          placeholder="e.g. Sarah M."
+        />
+      )}
 
       <div className="flex flex-col gap-1.5">
         <label className="text-sm font-medium text-heading">Notes</label>

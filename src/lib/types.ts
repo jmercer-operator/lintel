@@ -99,3 +99,123 @@ export function timeAgo(dateStr: string): string {
 
 // Default org for creating new projects
 export const DEFAULT_ORG_ID = "a0000000-0000-0000-0000-000000000001";
+
+// Classification
+export type ContactClassification = "prospect" | "customer";
+
+export const CLASSIFICATION_COLORS: Record<ContactClassification, { bg: string; text: string; hex: string }> = {
+  prospect: { bg: "bg-[#D4A855]/10", text: "text-[#D4A855]", hex: "#D4A855" },
+  customer: { bg: "bg-[#1A9E6F]/10", text: "text-[#1A9E6F]", hex: "#1A9E6F" },
+};
+
+export type AgentStatus = "active" | "inactive";
+export type CommissionType = "percentage" | "flat";
+
+export interface Agent {
+  id: string;
+  org_id: string;
+  first_name: string;
+  last_name: string;
+  preferred_name: string | null;
+  email: string | null;
+  phone: string | null;
+  secondary_phone: string | null;
+  company: string | null;
+  agency: string | null;
+  license_number: string | null;
+  license_expiry: string | null;
+  commission_type: CommissionType | null;
+  commission_rate: number | null;
+  status: AgentStatus;
+  notes: string | null;
+  avatar_url: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface AgentWithStats extends Agent {
+  assigned_projects: string[];
+  total_lots: number;
+  lots_by_status: Record<string, number>;
+  total_value: number;
+}
+
+export interface Contact {
+  id: string;
+  org_id: string;
+  classification: ContactClassification;
+  first_name: string;
+  last_name: string;
+  preferred_name: string | null;
+  email: string | null;
+  phone: string | null;
+  secondary_phone: string | null;
+  date_of_birth: string | null;
+  nationality: string | null;
+  country_of_residence: string | null;
+  id_type: string | null;
+  id_number: string | null;
+  id_expiry: string | null;
+  id_country: string | null;
+  id_document_url: string | null;
+  address_line_1: string | null;
+  address_line_2: string | null;
+  suburb: string | null;
+  state: string | null;
+  postcode: string | null;
+  country: string | null;
+  postal_address_line_1: string | null;
+  postal_address_line_2: string | null;
+  postal_suburb: string | null;
+  postal_state: string | null;
+  postal_postcode: string | null;
+  postal_country: string | null;
+  employer: string | null;
+  occupation: string | null;
+  company: string | null;
+  solicitor_name: string | null;
+  solicitor_firm: string | null;
+  solicitor_email: string | null;
+  solicitor_phone: string | null;
+  source: string | null;
+  source_detail: string | null;
+  referring_agent_id: string | null;
+  preferred_contact_method: string | null;
+  marketing_consent: boolean;
+  marketing_consent_date: string | null;
+  tags: string[] | null;
+  notes: string | null;
+  avatar_url: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface ContactWithLinkedStock extends Contact {
+  linked_stock: Array<{
+    stock_id: string;
+    lot_number: string;
+    project_name: string;
+    project_id: string;
+    status: StockStatus;
+    price: number | null;
+    role: string;
+  }>;
+  computed_classification: ContactClassification;
+}
+
+export interface ContactStock {
+  id: string;
+  contact_id: string;
+  stock_id: string;
+  project_id: string;
+  role: string;
+  linked_at: string;
+  notes: string | null;
+}
+
+export interface AgentProject {
+  id: string;
+  agent_id: string;
+  project_id: string;
+  assigned_at: string;
+}

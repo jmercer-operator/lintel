@@ -9,12 +9,13 @@ import { StatusBadge } from "@/components/StatusBadge";
 import { Modal } from "@/components/Modal";
 import { StockForm } from "@/components/StockForm";
 import { ALL_STATUSES, formatPrice, formatArea, timeAgo } from "@/lib/types";
-import type { ProjectWithStats, StockItem, StockStatus } from "@/lib/types";
+import type { ProjectWithStats, StockItem, StockStatus, Agent } from "@/lib/types";
 
 interface ProjectDetailClientProps {
   project: ProjectWithStats;
   stock: StockItem[];
   statusFilter: string;
+  agents?: Agent[];
 }
 
 const metricConfig = [
@@ -25,7 +26,7 @@ const metricConfig = [
   { key: "settled" as const, label: "Settled", color: "#2D8C5A" },
 ];
 
-export function ProjectDetailClient({ project, stock, statusFilter }: ProjectDetailClientProps) {
+export function ProjectDetailClient({ project, stock, statusFilter, agents }: ProjectDetailClientProps) {
   const router = useRouter();
   const [showAddStock, setShowAddStock] = useState(false);
   const [editingStock, setEditingStock] = useState<StockItem | null>(null);
@@ -159,6 +160,7 @@ export function ProjectDetailClient({ project, stock, statusFilter }: ProjectDet
       <Modal open={showAddStock} onClose={() => setShowAddStock(false)} title="Add New Lot">
         <StockForm
           projectId={project.id}
+          agents={agents}
           onSuccess={() => {
             setShowAddStock(false);
             router.refresh();
@@ -177,6 +179,7 @@ export function ProjectDetailClient({ project, stock, statusFilter }: ProjectDet
           <StockForm
             projectId={project.id}
             stock={editingStock}
+            agents={agents}
             onSuccess={() => {
               setEditingStock(null);
               router.refresh();

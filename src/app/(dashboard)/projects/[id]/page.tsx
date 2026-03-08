@@ -1,6 +1,7 @@
 import { notFound } from "next/navigation";
 import { getProject } from "@/lib/data/projects";
 import { getStock } from "@/lib/data/stock";
+import { getAgents } from "@/lib/data/agents";
 import { ProjectDetailClient } from "./ProjectDetailClient";
 
 interface PageProps {
@@ -12,7 +13,7 @@ export default async function ProjectDetailPage({ params, searchParams }: PagePr
   const { id } = await params;
   const { status } = await searchParams;
 
-  const project = await getProject(id);
+  const [project, agents] = await Promise.all([getProject(id), getAgents()]);
   if (!project) notFound();
 
   const statusFilter = status || "All";
@@ -23,6 +24,7 @@ export default async function ProjectDetailPage({ params, searchParams }: PagePr
       project={project}
       stock={stock}
       statusFilter={statusFilter}
+      agents={agents}
     />
   );
 }
