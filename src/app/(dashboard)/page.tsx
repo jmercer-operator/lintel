@@ -20,6 +20,7 @@ const metrics = [
   { label: "Available", value: "12", color: "#1A9E6F", change: null },
   { label: "Under Contract", value: "28", color: "#7B3FA0", change: null },
   { label: "Exchanged", value: "6", color: "#E07858", change: "↑ 2 this month" },
+  { label: "Settled", value: "8", color: "#2D8C5A", change: "↑ 3 this month" },
 ];
 
 const stockData: {
@@ -84,7 +85,7 @@ export default function DashboardPage() {
       </div>
 
       {/* Metric Cards */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-4">
         {metrics.map((metric) => (
           <Card key={metric.label} padding="md">
             <p className="text-sm text-secondary font-medium mb-2">{metric.label}</p>
