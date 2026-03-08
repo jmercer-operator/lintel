@@ -1,0 +1,63 @@
+@import "tailwindcss";
+
+@theme inline {
+  /* Primary */
+  --color-emerald-primary: #1A9E6F;
+  --color-emerald-light: #4DC89A;
+  --color-emerald-dark: #147A56;
+
+  /* Accent */
+  --color-gold: #D4A855;
+
+  /* Neutrals */
+  --color-charcoal: #1E2B26;
+  --color-bg: #FAFCFB;
+  --color-bg-alt: #F0F5F2;
+  --color-border: #E2E8E4;
+  --color-muted: #B8C4BC;
+  --color-secondary: #6B7A70;
+  --color-body: #2D3B32;
+  --color-heading: #151E18;
+
+  /* Semantic */
+  --color-success: #34B764;
+  --color-warning: #E8A840;
+  --color-error: #E05252;
+  --color-info: #3BA3A3;
+
+  /* Fonts */
+  --font-sans: var(--font-outfit);
+  --font-mono: var(--font-jetbrains-mono);
+
+  /* Radius */
+  --radius-input: 6px;
+  --radius-card: 10px;
+  --radius-card-lg: 14px;
+  --radius-button: 8px;
+
+  /* Shadows */
+  --shadow-card: 0 1px 3px rgba(30, 43, 38, 0.06), 0 1px 2px rgba(30, 43, 38, 0.04);
+  --shadow-card-hover: 0 4px 12px rgba(30, 43, 38, 0.08), 0 2px 4px rgba(30, 43, 38, 0.04);
+  --shadow-button: 0 1px 2px rgba(30, 43, 38, 0.05);
+
+  /* Sidebar */
+  --spacing-sidebar: 260px;
+}
+
+body {
+  background-color: var(--color-bg);
+  color: var(--color-body);
+  font-family: var(--font-sans), system-ui, sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+h1, h2, h3, h4, h5, h6 {
+  color: var(--color-heading);
+}
+
+/* Focus ring */
+*:focus-visible {
+  outline: 2px solid var(--color-emerald-primary);
+  outline-offset: 2px;
+}
