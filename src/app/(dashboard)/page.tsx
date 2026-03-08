@@ -22,18 +22,22 @@ const metrics = [
 
 const stockData: {
   lot: string;
-  type: string;
+  bed: number;
+  bath: number;
+  car: number;
+  m2Int: number;
+  m2Ext: number;
   price: string;
   status: StockStatus;
   agent: string;
   updated: string;
 }[] = [
-  { lot: "101", type: "2B2B1C", price: "$485,000", status: "Available", agent: "Sarah M.", updated: "2 hours ago" },
-  { lot: "102", type: "1B1B1C", price: "$375,000", status: "EOI", agent: "James T.", updated: "5 hours ago" },
-  { lot: "203", type: "3B2B2C", price: "$625,000", status: "Reserved", agent: "Sarah M.", updated: "1 day ago" },
-  { lot: "204", type: "2B2B1C", price: "$510,000", status: "Under Contract", agent: "Priya K.", updated: "2 days ago" },
-  { lot: "305", type: "2B1B1C", price: "$445,000", status: "Exchanged", agent: "James T.", updated: "3 days ago" },
-  { lot: "306", type: "3B2B2C", price: "$680,000", status: "Settled", agent: "Priya K.", updated: "1 week ago" },
+  { lot: "101", bed: 2, bath: 2, car: 1, m2Int: 78, m2Ext: 12, price: "$485,000", status: "Available", agent: "Sarah M.", updated: "2 hours ago" },
+  { lot: "102", bed: 1, bath: 1, car: 1, m2Int: 52, m2Ext: 8, price: "$375,000", status: "EOI", agent: "James T.", updated: "5 hours ago" },
+  { lot: "203", bed: 3, bath: 2, car: 2, m2Int: 110, m2Ext: 18, price: "$625,000", status: "Reserved", agent: "Sarah M.", updated: "1 day ago" },
+  { lot: "204", bed: 2, bath: 2, car: 1, m2Int: 82, m2Ext: 10, price: "$510,000", status: "Under Contract", agent: "Priya K.", updated: "2 days ago" },
+  { lot: "305", bed: 2, bath: 1, car: 1, m2Int: 68, m2Ext: 9, price: "$445,000", status: "Exchanged", agent: "James T.", updated: "3 days ago" },
+  { lot: "306", bed: 3, bath: 2, car: 2, m2Int: 115, m2Ext: 22, price: "$680,000", status: "Settled", agent: "Priya K.", updated: "1 week ago" },
 ];
 
 const recentActivity = [
@@ -94,11 +98,15 @@ export default function DashboardPage() {
           <p className="text-sm text-secondary mt-0.5">All lots for {selectedProject}</p>
         </div>
         <div className="overflow-x-auto">
-          <table className="w-full min-w-[640px]">
+          <table className="w-full min-w-[900px]">
             <thead>
               <tr className="border-b border-border">
                 <th className="px-4 sm:px-6 py-3 text-left text-xs font-semibold text-muted uppercase tracking-wider">Lot</th>
-                <th className="px-4 sm:px-6 py-3 text-left text-xs font-semibold text-muted uppercase tracking-wider">Type</th>
+                <th className="px-4 sm:px-6 py-3 text-center text-xs font-semibold text-muted uppercase tracking-wider">Bed</th>
+                <th className="px-4 sm:px-6 py-3 text-center text-xs font-semibold text-muted uppercase tracking-wider">Bath</th>
+                <th className="px-4 sm:px-6 py-3 text-center text-xs font-semibold text-muted uppercase tracking-wider">Car</th>
+                <th className="px-4 sm:px-6 py-3 text-right text-xs font-semibold text-muted uppercase tracking-wider">m² Int</th>
+                <th className="px-4 sm:px-6 py-3 text-right text-xs font-semibold text-muted uppercase tracking-wider">m² Ext</th>
                 <th className="px-4 sm:px-6 py-3 text-left text-xs font-semibold text-muted uppercase tracking-wider">Price</th>
                 <th className="px-4 sm:px-6 py-3 text-left text-xs font-semibold text-muted uppercase tracking-wider">Status</th>
                 <th className="px-4 sm:px-6 py-3 text-left text-xs font-semibold text-muted uppercase tracking-wider">Agent</th>
@@ -112,7 +120,11 @@ export default function DashboardPage() {
                   className="border-b border-border last:border-0 hover:bg-bg-alt transition-colors cursor-pointer"
                 >
                   <td className="px-4 sm:px-6 py-3.5 text-sm font-mono font-semibold text-heading">{row.lot}</td>
-                  <td className="px-4 sm:px-6 py-3.5 text-sm text-body">{row.type}</td>
+                  <td className="px-4 sm:px-6 py-3.5 text-sm font-mono text-center text-body">{row.bed}</td>
+                  <td className="px-4 sm:px-6 py-3.5 text-sm font-mono text-center text-body">{row.bath}</td>
+                  <td className="px-4 sm:px-6 py-3.5 text-sm font-mono text-center text-body">{row.car}</td>
+                  <td className="px-4 sm:px-6 py-3.5 text-sm font-mono text-right text-body">{row.m2Int}</td>
+                  <td className="px-4 sm:px-6 py-3.5 text-sm font-mono text-right text-body">{row.m2Ext}</td>
                   <td className="px-4 sm:px-6 py-3.5 text-sm font-mono font-medium text-heading">{row.price}</td>
                   <td className="px-4 sm:px-6 py-3.5">
                     <StatusBadge status={row.status} />
