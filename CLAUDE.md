@@ -358,3 +358,76 @@ Stock table now has `agent_id` FK to agents.
 - Build passes with zero errors
 - Commit message: "checkpoint 4: contacts & agents"
 - Push to main
+
+## Checkpoint 5a — Documents & Role System (CURRENT)
+
+### Database — ALREADY CREATED (do NOT run SQL again)
+Tables: `user_profiles`, `document_categories`, `project_documents`, `client_documents`, `project_milestones`
+Storage buckets: `project-documents`, `client-documents` (both private, 50MB limit)
+Seed data: 5 document categories, 7 milestones for Crossley & Bourke, 4 user profiles (1 staff, 3 agents)
+
+### Three User Roles
+1. **Staff** (role='staff') — Full access. Create projects, upload documents, add agents, full reports.
+2. **Agent** (role='agent') — Add clients, change lot status, download project docs, upload client docs. Cannot add projects or agents.
+3. **Client** (role='client') — View their development, download their contract, see progress milestones, see their agent. Fun, visual experience.
+
+### What To Build
+
+1. **Data access layer** additions:
+   - `src/lib/data/documents.ts` — getProjectDocuments(projectId), getDocumentCategories(orgId), uploadProjectDocument(), deleteProjectDocument(), getClientDocuments(contactId)
+   - `src/lib/data/milestones.ts` — getProjectMilestones(projectId), updateMilestone()
+   - `src/lib/data/users.ts` — getUserProfile(email), getUserRole()
+   - Server actions for document upload/delete, milestone updates
+
+2. **Project detail page — Documents tab**:
+   - Add a tab bar to project detail: "Stock" | "Documents" | "Milestones"
+   - Documents tab shows documents grouped by category
+   - Each category section: category name, list of documents (name, file size, date, download button)
+   - "Upload Document" button per category (opens file picker)
+   - "Add Category" button to create custom categories
+   - Upload to Supabase Storage bucket `project-documents` with path: `{org_id}/{project_id}/{category_id}/{filename}`
+   - Visibility badge on each doc (Staff Only / Agents / Everyone)
+   - Delete button (staff only)
+
+3. **Project detail page — Milestones tab**:
+   - Visual milestone/progress bar showing construction stages
+   - Each milestone: name, status (completed ✓ / in progress ◉ / upcoming ○), target date
+   - Completed milestones: emerald with checkmark
+   - In progress: pulsing/animated emerald dot
+   - Upcoming: grey outline
+   - Progress percentage calculated from completed/total
+   - Staff can edit milestone status and dates (inline or modal)
+
+4. **Role-based UI helpers**:
+   - Create `src/lib/auth/roles.ts` with role checking utilities
+   - `getCurrentUserRole()` — for now, return 'staff' as default (preview mode)
+   - `canCreateProject(role)`, `canUploadDocument(role)`, `canAddAgent(role)`, `canChangeStatus(role)`, etc.
+   - Components conditionally show/hide based on role
+   - Don't implement actual auth yet — just the permission framework
+
+5. **Client document upload** (on contact detail page):
+   - Add "Documents" section to contact detail
+   - Upload client documents: Signed Contract, ID Document, Proof of Funds, Solicitor Letter, Deposit Receipt, Other
+   - Upload to `client-documents` bucket with path: `{org_id}/{contact_id}/{type}/{filename}`
+   - Download + delete buttons
+
+6. **Navigation update**:
+   - Add "Documents" to sidebar under MANAGEMENT (links to a documents overview page)
+
+7. **Documents overview page** (`/documents`):
+   - Replace placeholder
+   - Shows all projects with document counts per category
+   - Quick upload from here too
+   - Filter by project
+
+### IMPORTANT:
+- File uploads use Supabase Storage client
+- All documents are PRIVATE (not public URLs) — use signed URLs for downloads
+- Visibility levels: 'staff' (admin only), 'agent' (staff + agents can see), 'client' (everyone including clients)
+- Default visibility for project documents: 'agent' (agents can download)
+- Default visibility for client documents: 'staff' (only staff see client docs)
+- Max file size: 50MB
+- Keep all existing pages working
+- Build passes with zero errors
+- Commit message: "checkpoint 5a: documents & role system"
+- Push to main
