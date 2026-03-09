@@ -7,7 +7,9 @@ import { Card } from "@/components/Card";
 import { StatusBadge } from "@/components/StatusBadge";
 import { Modal } from "@/components/Modal";
 import { ContactForm } from "@/components/ContactForm";
-import type { StockItem, StockStats, StockStatus, Agent } from "@/lib/types";
+import { PipelineBoard } from "@/components/PipelineBoard";
+import { FollowUpsList } from "@/components/FollowUpsList";
+import type { StockItem, StockStats, StockStatus, Agent, PipelineStage, PipelineContact, FollowUp } from "@/lib/types";
 import { formatPrice, timeAgo } from "@/lib/types";
 
 interface Props {
@@ -17,9 +19,12 @@ interface Props {
   recentLots: (StockItem & { project_name: string })[];
   agents: Agent[];
   agentId: string;
+  pipelineStats: Record<PipelineStage, number>;
+  pipelineContacts: PipelineContact[];
+  followUps: FollowUp[];
 }
 
-export function AgentDashboardClient({ agentName, stats, clientCount, recentLots, agents, agentId }: Props) {
+export function AgentDashboardClient({ agentName, stats, clientCount, recentLots, agents, agentId, pipelineStats, pipelineContacts, followUps }: Props) {
   const [showAddClient, setShowAddClient] = useState(false);
   const router = useRouter();
 
@@ -83,6 +88,14 @@ export function AgentDashboardClient({ agentName, stats, clientCount, recentLots
           Update Lot Status
         </Link>
       </div>
+
+      {/* My Pipeline */}
+      <Card padding="md">
+        <PipelineBoard contacts={pipelineContacts} stats={pipelineStats} />
+      </Card>
+
+      {/* My Follow-ups */}
+      <FollowUpsList followUps={followUps} title="My Follow-ups" showContactName={true} />
 
       {/* Two column layout */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">

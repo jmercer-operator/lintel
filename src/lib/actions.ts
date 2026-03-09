@@ -1095,3 +1095,181 @@ export async function deleteProgressVideoAction(formData: FormData) {
   revalidatePath(`/projects/${project_id}`);
   return { success: true };
 }
+
+/* ─── Pipeline / Deal Engine Actions ─── */
+
+export async function createActivityAction(formData: FormData) {
+  const supabase = await createClient();
+
+  const contact_id = formData.get("contact_id") as string;
+  const type = formData.get("type") as string;
+  const title = formData.get("title") as string;
+  const description = (formData.get("description") as string) || null;
+  const agent_id = (formData.get("agent_id") as string) || null;
+
+  if (!contact_id || !type || !title) {
+    return { error: "Contact, type, and title are required" };
+  }
+
+  const { error } = await supabase.from("activities").insert({
+    contact_id,
+    type,
+    title,
+    description,
+    agent_id,
+  });
+
+  if (error) return { error: error.message };
+
+  revalidatePath(`/contacts/${contact_id}`);
+  return { success: true };
+}
+
+export async function createFollowUpAction(formData: FormData) {
+  const supabase = await createClient();
+
+  const contact_id = formData.get("contact_id") as string;
+  const action_type = formData.get("action_type") as string;
+  const description = formData.get("description") as string;
+  const due_date = formData.get("due_date") as string;
+  const priority = (formData.get("priority") as string) || "normal";
+  const agent_id = (formData.get("agent_id") as string) || null;
+
+  if (!contact_id || !action_type || !description || !due_date) {
+    return { error: "Contact, action type, description, and due date are required" };
+  }
+
+  const { error } = await supabase.from("follow_ups").insert({
+    contact_id,
+    action_type,
+    description,
+    due_date,
+    priority,
+    agent_id,
+  });
+
+  if (error) return { error: error.message };
+
+  revalidatePath(`/contacts/${contact_id}`);
+  revalidatePath("/");
+  revalidatePath("/agent");
+  return { success: true };
+}
+
+export async function completeFollowUpAction(formData: FormData) {
+  const supabase = await createClient();
+
+  const id = formData.get("id") as string;
+  const contact_id = formData.get("contact_id") as string;
+
+  if (!id) return { error: "Follow-up ID is required" };
+
+  const { error } = await supabase
+    .from("follow_ups")
+    .update({ completed: true, completed_at: new Date().toISOString() })
+    .eq("id", id);
+
+  if (error) return { error: error.message };
+
+  if (contact_id) revalidatePath(`/contacts/${contact_id}`);
+  revalidatePath("/");
+  revalidatePath("/agent");
+  return { success: true };
+}
+
+export async function createBuyerInterestAction(formData: FormData) {
+  const supabase = await createClient();
+
+  const contact_id = formData.get("contact_id") as string;
+  const stock_id = formData.get("stock_id") as string;
+  const interest_level = formData.get("interest_level") as string;
+  const notes = (formData.get("notes") as string) || null;
+
+  if (!contact_id || !stock_id || !interest_level) {
+    return { error: "Contact, stock, and interest level are required" };
+  }
+
+  const { error } = await supabase.from("buyer_interests").insert({
+    contact_id,
+    stock_id,
+    interest_level,
+    notes,
+  });
+
+  if (error) {
+    if (error.code === "23505") return { error: "This interest already exists" };
+    return { error: error.message };
+  }
+
+  revalidatePath(`/contacts/${contact_id}`);
+  return { success: true };
+}
+
+export async function removeBuyerInterestAction(formData: FormData) {
+  const supabase = await createClient();
+
+  const id = formData.get("id") as string;
+  const contact_id = formData.get("contact_id") as string;
+
+  if (!id) return { error: "Interest ID is required" };
+
+  const { error } = await supabase
+    .from("buyer_interests")
+    .delete()
+    .eq("id", id);
+
+  if (error) return { error: error.message };
+
+  if (contact_id) revalidatePath(`/contacts/${contact_id}`);
+  return { success: true };
+}
+
+export async function updatePipelineStageAction(formData: FormData) {
+  const supabase = await createClient();
+
+  const contact_id = formData.get("contact_id") as string;
+  const stage = formData.get("pipeline_stage") as string;
+  const next_action = (formData.get("next_action") as string) || null;
+  const next_action_date = (formData.get("next_action_date") as string) || null;
+
+  if (!contact_id || !stage) {
+    return { error: "Contact and stage are required" };
+  }
+
+  const { error } = await supabase
+    .from("contacts")
+    .update({
+      pipeline_stage: stage,
+      next_action,
+      next_action_date,
+    })
+    .eq("id", contact_id);
+
+  if (error) return { error: error.message };
+
+  // Create a status_change activity
+  await supabase.from("activities").insert({
+    contact_id,
+    type: "status_change",
+    title: `Pipeline stage changed to ${stage.replace(/_/g, " ")}`,
+    description: next_action ? `Next action: ${next_action}` : null,
+  });
+
+  // Create notification for pipeline change
+  try {
+    await supabase.from("notifications").insert({
+      org_id: DEFAULT_ORG_ID,
+      type: "pipeline_change",
+      title: "Pipeline Stage Updated",
+      message: `Contact moved to ${stage.replace(/_/g, " ")}`,
+      metadata: { contact_id, stage },
+    });
+  } catch {
+    // notifications table may not exist
+  }
+
+  revalidatePath("/");
+  revalidatePath("/agent");
+  revalidatePath(`/contacts/${contact_id}`);
+  return { success: true };
+}

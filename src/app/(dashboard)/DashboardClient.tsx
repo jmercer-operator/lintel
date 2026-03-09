@@ -5,8 +5,10 @@ import { useRouter } from "next/navigation";
 import { Card } from "@/components/Card";
 import { StatusBadge } from "@/components/StatusBadge";
 import { ProjectLogo } from "@/components/ProjectLogo";
+import { PipelineBoard } from "@/components/PipelineBoard";
+import { FollowUpsList } from "@/components/FollowUpsList";
 import { ALL_STATUSES, formatPrice, formatArea, timeAgo } from "@/lib/types";
-import type { ProjectWithStats, StockStats, StockStatus } from "@/lib/types";
+import type { ProjectWithStats, StockStats, StockStatus, PipelineStage, PipelineContact, FollowUp } from "@/lib/types";
 import type { StockWithProject } from "@/lib/data/stock";
 
 const recentActivity = [
@@ -30,6 +32,9 @@ interface DashboardClientProps {
   stock: StockWithProject[];
   selectedProjectId: string;
   statusFilter: string;
+  pipelineStats: Record<PipelineStage, number>;
+  pipelineContacts: PipelineContact[];
+  followUps: FollowUp[];
 }
 
 interface ProjectGroup {
@@ -72,6 +77,9 @@ export function DashboardClient({
   stock,
   selectedProjectId,
   statusFilter,
+  pipelineStats,
+  pipelineContacts,
+  followUps,
 }: DashboardClientProps) {
   const router = useRouter();
   const [expandedProjects, setExpandedProjects] = useState<Set<string>>(new Set());
@@ -137,6 +145,14 @@ export function DashboardClient({
           </Card>
         ))}
       </div>
+
+      {/* Pipeline Board */}
+      <Card padding="md">
+        <PipelineBoard contacts={pipelineContacts} stats={pipelineStats} />
+      </Card>
+
+      {/* Today's Follow-ups */}
+      <FollowUpsList followUps={followUps} title="Today's Follow-ups" showContactName={true} />
 
       {/* Stock Overview — Grouped by Project */}
       <Card padding="sm">

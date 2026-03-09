@@ -10,17 +10,24 @@ import { StatusBadge } from "@/components/StatusBadge";
 import { ClassificationBadge } from "@/components/ClassificationBadge";
 import { BuyerTypeBadge, FirbBadge } from "@/components/BuyerTypeBadge";
 import { ContactForm } from "@/components/ContactForm";
-import { formatPrice, type ContactWithLinkedStock, type Agent, type StockStatus, type BuyerType } from "@/lib/types";
+import { formatPrice, type ContactWithLinkedStock, type Agent, type StockStatus, type BuyerType, type Activity, type FollowUp, type BuyerInterest, type Project } from "@/lib/types";
 import { ClientDocuments } from "@/components/ClientDocuments";
+import { ActivityTimeline } from "@/components/ActivityTimeline";
+import { ContactFollowUps } from "@/components/ContactFollowUps";
+import { BuyerInterests } from "@/components/BuyerInterests";
 import type { ClientDocument } from "@/components/ClientDocuments";
 
 interface Props {
   contact: ContactWithLinkedStock;
   agents: Agent[];
   clientDocuments: ClientDocument[];
+  activities: Activity[];
+  followUps: FollowUp[];
+  buyerInterests: BuyerInterest[];
+  projects: Project[];
 }
 
-export function ContactDetailClient({ contact, agents, clientDocuments }: Props) {
+export function ContactDetailClient({ contact, agents, clientDocuments, activities, followUps, buyerInterests, projects }: Props) {
   const router = useRouter();
   const [showEditModal, setShowEditModal] = useState(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
@@ -158,16 +165,17 @@ export function ContactDetailClient({ contact, agents, clientDocuments }: Props)
             )}
           </Card>
 
+          {/* Buyer Interests */}
+          <BuyerInterests interests={buyerInterests} contactId={contact.id} projects={projects} />
+
+          {/* Follow-ups */}
+          <ContactFollowUps followUps={followUps} contactId={contact.id} agents={agents} />
+
           {/* Client Documents */}
           <ClientDocuments contactId={contact.id} documents={clientDocuments} firbRequired={contact.firb_required} />
 
-          {/* Activity Timeline Placeholder */}
-          <Card>
-            <h3 className="font-semibold text-heading mb-4">Activity</h3>
-            <div className="text-center py-6">
-              <p className="text-sm text-secondary">Activity timeline coming soon</p>
-            </div>
-          </Card>
+          {/* Activity Timeline */}
+          <ActivityTimeline activities={activities} contactId={contact.id} agents={agents} />
         </div>
 
         {/* Right column - Meta */}

@@ -284,3 +284,131 @@ export const VISIBILITY_COLORS: Record<DocumentVisibility, { bg: string; text: s
   agent: { bg: "bg-[#D4A855]/10", text: "text-[#D4A855]" },
   client: { bg: "bg-[#1A9E6F]/10", text: "text-[#1A9E6F]" },
 };
+
+/* ─── Pipeline / Deal Engine Types ─── */
+
+export type PipelineStage = 'new_lead' | 'contacted' | 'inspection_booked' | 'offer_submitted' | 'reserved' | 'contract_issued' | 'exchanged' | 'settled';
+export type ActivityType = 'call' | 'email' | 'meeting' | 'inspection' | 'note' | 'document' | 'status_change' | 'system';
+export type FollowUpAction = 'call' | 'email' | 'meeting' | 'send_document' | 'follow_up' | 'other';
+export type InterestLevel = 'enquiry' | 'shortlisted' | 'strong' | 'offer';
+export type FollowUpPriority = 'low' | 'normal' | 'high';
+
+export const PIPELINE_STAGES: { key: PipelineStage; label: string; shortLabel: string }[] = [
+  { key: 'new_lead', label: 'New Lead', shortLabel: 'New' },
+  { key: 'contacted', label: 'Contacted', shortLabel: 'Contacted' },
+  { key: 'inspection_booked', label: 'Inspection Booked', shortLabel: 'Inspection' },
+  { key: 'offer_submitted', label: 'Offer Submitted', shortLabel: 'Offer' },
+  { key: 'reserved', label: 'Reserved', shortLabel: 'Reserved' },
+  { key: 'contract_issued', label: 'Contract Issued', shortLabel: 'Contract' },
+  { key: 'exchanged', label: 'Exchanged', shortLabel: 'Exchanged' },
+  { key: 'settled', label: 'Settled', shortLabel: 'Settled' },
+];
+
+export const PIPELINE_STAGE_COLORS: Record<PipelineStage, { bg: string; text: string; hex: string }> = {
+  new_lead: { bg: 'bg-[#D4A855]/10', text: 'text-[#D4A855]', hex: '#D4A855' },
+  contacted: { bg: 'bg-[#1A9E6F]/10', text: 'text-[#1A9E6F]', hex: '#1A9E6F' },
+  inspection_booked: { bg: 'bg-[#1A9E6F]/10', text: 'text-[#1A9E6F]', hex: '#1A9E6F' },
+  offer_submitted: { bg: 'bg-[#7B3FA0]/10', text: 'text-[#7B3FA0]', hex: '#7B3FA0' },
+  reserved: { bg: 'bg-[#D4A855]/10', text: 'text-[#D4A855]', hex: '#D4A855' },
+  contract_issued: { bg: 'bg-[#7B3FA0]/10', text: 'text-[#7B3FA0]', hex: '#7B3FA0' },
+  exchanged: { bg: 'bg-[#E07858]/10', text: 'text-[#E07858]', hex: '#E07858' },
+  settled: { bg: 'bg-[#2D8C5A]/10', text: 'text-[#2D8C5A]', hex: '#2D8C5A' },
+};
+
+export const ACTIVITY_TYPE_ICONS: Record<ActivityType, string> = {
+  call: '📞',
+  email: '✉️',
+  meeting: '🤝',
+  inspection: '🏠',
+  note: '📝',
+  document: '📄',
+  status_change: '🔄',
+  system: '⚙️',
+};
+
+export const FOLLOW_UP_ACTION_LABELS: Record<FollowUpAction, string> = {
+  call: 'Call',
+  email: 'Email',
+  meeting: 'Meeting',
+  send_document: 'Send Document',
+  follow_up: 'Follow Up',
+  other: 'Other',
+};
+
+export const INTEREST_LEVEL_COLORS: Record<InterestLevel, { bg: string; text: string }> = {
+  enquiry: { bg: 'bg-[#6B7A70]/10', text: 'text-[#6B7A70]' },
+  shortlisted: { bg: 'bg-[#D4A855]/10', text: 'text-[#D4A855]' },
+  strong: { bg: 'bg-[#1A9E6F]/10', text: 'text-[#1A9E6F]' },
+  offer: { bg: 'bg-[#7B3FA0]/10', text: 'text-[#7B3FA0]' },
+};
+
+export const PRIORITY_COLORS: Record<FollowUpPriority, { bg: string; text: string }> = {
+  low: { bg: 'bg-[#6B7A70]/10', text: 'text-[#6B7A70]' },
+  normal: { bg: 'bg-[#1A9E6F]/10', text: 'text-[#1A9E6F]' },
+  high: { bg: 'bg-[#E05252]/10', text: 'text-[#E05252]' },
+};
+
+export interface Activity {
+  id: string;
+  org_id: string;
+  contact_id: string;
+  stock_id: string | null;
+  agent_id: string | null;
+  type: ActivityType;
+  title: string;
+  description: string | null;
+  metadata: Record<string, unknown>;
+  created_by: string | null;
+  created_at: string;
+  // Joined fields
+  agent_name?: string;
+}
+
+export interface FollowUp {
+  id: string;
+  org_id: string;
+  contact_id: string;
+  stock_id: string | null;
+  agent_id: string | null;
+  action_type: FollowUpAction;
+  description: string;
+  due_date: string;
+  completed: boolean;
+  completed_at: string | null;
+  priority: FollowUpPriority;
+  created_at: string;
+  // Joined fields
+  contact_name?: string;
+  agent_name?: string;
+  project_name?: string;
+  lot_number?: string;
+}
+
+export interface BuyerInterest {
+  id: string;
+  contact_id: string;
+  stock_id: string;
+  interest_level: InterestLevel;
+  notes: string | null;
+  created_at: string;
+  // Joined fields
+  lot_number?: string;
+  project_name?: string;
+  project_id?: string;
+  price?: number | null;
+}
+
+export interface PipelineContact {
+  id: string;
+  first_name: string;
+  last_name: string;
+  pipeline_stage: PipelineStage;
+  next_action: string | null;
+  next_action_date: string | null;
+  referring_agent_id: string | null;
+  agent_name?: string;
+  project_name?: string;
+  lot_number?: string;
+  created_at: string;
+  updated_at: string;
+}

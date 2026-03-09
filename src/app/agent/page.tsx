@@ -1,14 +1,21 @@
 import { PREVIEW_AGENT_ID } from "@/lib/auth/roles";
 import { getAgent, getAgents } from "@/lib/data/agents";
 import { getAgentStockStats, getAgentClients, getAgentStock } from "@/lib/data/agent-portal";
+import { getPipelineStats, getPipelineContacts } from "@/lib/data/pipeline";
+import { getFollowUps } from "@/lib/data/follow-ups";
 import { AgentDashboardClient } from "./AgentDashboardClient";
 
 export default async function AgentDashboardPage() {
   const agent = await getAgent(PREVIEW_AGENT_ID);
-  const stats = await getAgentStockStats(PREVIEW_AGENT_ID);
-  const clients = await getAgentClients(PREVIEW_AGENT_ID);
-  const stock = await getAgentStock(PREVIEW_AGENT_ID);
-  const agents = await getAgents();
+  const [stats, clients, stock, agents, pipelineStats, pipelineContacts, followUps] = await Promise.all([
+    getAgentStockStats(PREVIEW_AGENT_ID),
+    getAgentClients(PREVIEW_AGENT_ID),
+    getAgentStock(PREVIEW_AGENT_ID),
+    getAgents(),
+    getPipelineStats(),
+    getPipelineContacts(undefined, PREVIEW_AGENT_ID),
+    getFollowUps(PREVIEW_AGENT_ID),
+  ]);
 
   // Recent activity: last 5 lots updated
   const recentLots = [...stock]
@@ -23,6 +30,9 @@ export default async function AgentDashboardPage() {
       recentLots={recentLots}
       agents={agents}
       agentId={PREVIEW_AGENT_ID}
+      pipelineStats={pipelineStats}
+      pipelineContacts={pipelineContacts}
+      followUps={followUps}
     />
   );
 }

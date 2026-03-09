@@ -1,11 +1,18 @@
 import { ButtonHTMLAttributes, forwardRef } from "react";
 
 type Variant = "primary" | "secondary" | "ghost" | "accent" | "destructive";
+type Size = "sm" | "md";
 
 interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
   variant?: Variant;
   fullWidth?: boolean;
+  size?: Size;
 }
+
+const sizeStyles: Record<Size, string> = {
+  sm: "px-3 py-1.5 text-xs",
+  md: "px-4 py-2.5 text-sm",
+};
 
 const variantStyles: Record<Variant, string> = {
   primary:
@@ -21,17 +28,18 @@ const variantStyles: Record<Variant, string> = {
 };
 
 export const Button = forwardRef<HTMLButtonElement, ButtonProps>(
-  ({ variant = "primary", fullWidth, className = "", children, ...props }, ref) => {
+  ({ variant = "primary", fullWidth, size = "md", className = "", children, ...props }, ref) => {
     return (
       <button
         ref={ref}
         className={`
           inline-flex items-center justify-center gap-2
-          rounded-[var(--radius-button)] px-4 py-2.5
-          font-semibold text-sm
+          rounded-[var(--radius-button)]
+          font-semibold
           transition-all duration-150 ease-in-out
           disabled:opacity-50 disabled:pointer-events-none
           cursor-pointer
+          ${sizeStyles[size]}
           ${variantStyles[variant]}
           ${fullWidth ? "w-full" : ""}
           ${className}
