@@ -600,3 +600,103 @@ This is the FUN portal. Clients (buyers) see a completely different experience �
 - Build passes with zero errors
 - Commit message: "checkpoint 5c: client portal"
 - Push to main
+
+## Checkpoint 6 — Staff Feedback Refinements (CURRENT)
+
+### Database — ALREADY UPDATED (do NOT run SQL again)
+- contacts: added `buyer_type` ('owner_occupier'|'investor'), `firb_required` (boolean)
+- contacts: source now includes 'direct_marketing' option
+- client_documents: document_type now includes 'firb', removed 'proof_of_funds'
+- agents: added address fields (address_line_1, address_line_2, suburb, state, postcode, country), logo_url
+- projects: added logo_url, hero_render_url
+- document_categories: added 'Project Logo' (sort 0) and 'Hero Render' (sort 3)
+- Seed data updated: contacts have buyer_type, FIRB flagged for non-Australians
+
+### 14 Changes to Implement
+
+**1. Contact source — agent autocomplete + Direct Marketing:**
+- Source field becomes a searchable dropdown
+- Type a few letters → shows matching agents from agents table
+- Or select "Direct Marketing" (no agent, no commission)
+- When agent selected, auto-fill referring_agent_id
+- When "Direct Marketing" selected, set referring_agent_id to null
+
+**2. Buyer type on contact form:**
+- New dropdown: "Owner Occupier" or "Investor"
+- Required field when adding a contact
+- Show as badge on contact cards/list (like classification badge)
+
+**3. Remove "Proof of Funds" from client document types:**
+- Document type options: Signed Contract, ID Document, Solicitor Letter, Deposit Receipt, FIRB, Other
+- No "Proof of Funds"
+
+**4. Shared client documents architecture:**
+- Client documents uploaded for a contact should ALSO appear under the project's Documents tab
+- On project Documents tab: add a "Client Documents" section showing all client docs for that project
+- Upload from either location (contact detail OR project documents) — same underlying data
+
+**5. FIRB instead of Country:**
+- On contact card/detail: replace "Country of Residence" display with "FIRB Approval Required: Yes/No"
+- Dropdown: Yes / No
+- If Yes: show "FIRB" as an additional document type option in client documents
+- If No: hide FIRB from document upload options
+- Keep country_of_residence in DB but don't prominently display it
+
+**6. Remove "Company" from employment section:**
+- Contact form employment tab: remove company field
+- Only show: Employer, Occupation
+
+**7. Lot → Customer linking flow:**
+- On stock table rows: when clicking a lot, show lot detail
+- Add "Reserve" / "Link Customer" button on lot detail
+- Clicking opens a modal with two options:
+  A) "Add New Customer" → opens contact creation form, auto-links to this lot
+  B) "Link Existing Customer" → searchable dropdown of existing contacts, select one → creates contact_stock link
+- When customer is linked, lot status auto-changes to "EOI"
+- Show linked customer name on the stock table row
+
+**8. Auto-tags:**
+- When buyer_type is set to "investor", auto-add tag "investor"
+- When buyer_type is "owner_occupier", auto-add tag "owner-occupier"  
+- When contact is linked to a project, auto-add tag with project slug (e.g. "crossley-bourke", "oak-and-high")
+- Tags still editable manually, but these auto-populate
+
+**9. Agent page — address + logo:**
+- Agent detail page: show address fields
+- Agent card/detail: show logo at top (if logo_url exists)
+- Agent form: add address fields + logo upload
+
+**10. Project logo next to project name:**
+- Everywhere project name appears, show small project logo next to it (if logo_url exists)
+- Dashboard project selector, project cards, project detail header, sidebar project lists
+- Size: 24-32px inline with text, rounded corners
+
+**11. Agent form — remove fields:**
+- Remove "Company" field from add/edit agent form
+- Remove "License Number" and "License Expiry" fields
+- Keep: First Name, Last Name, Preferred Name, Email, Phone, Secondary Phone, Agency, Commission Type, Commission Rate, Status, Address fields, Logo, Notes
+
+**12. Project documents — Project Logo category:**
+- Under documents tab, show "Project Logo" as first category
+- Single upload (replaces if new one uploaded)
+- When uploaded, auto-set projects.logo_url to the file URL
+
+**13. Hero Render + multiple renders:**
+- "Hero Render" category: single primary render, auto-sets projects.hero_render_url
+- "Renders" category: allow multiple file uploads (multi-select in file picker)
+- Show as image thumbnails in the documents tab
+
+**14. Multiple uploads for Marketing Collateral and Specifications:**
+- These categories allow multiple files
+- Multi-select file picker
+- Show file count per category
+
+### IMPORTANT:
+- All changes apply to the STAFF view (src/app/(dashboard)/)
+- Agent and client portal may need minor updates for consistency
+- Keep all existing functionality working
+- Auto-tags should not duplicate (check before adding)
+- Logo/render thumbnails: use Supabase Storage signed URLs
+- Build passes with zero errors
+- Commit message: "checkpoint 6: staff feedback refinements"
+- Push to main
