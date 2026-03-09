@@ -54,7 +54,7 @@ export function RoleSwitcher() {
   if (!mounted || !preview) return null;
 
   return (
-    <div className="hidden md:flex items-center bg-bg-alt rounded-full p-0.5 border border-border">
+    <div className="flex items-center bg-bg-alt rounded-full p-0.5 border border-border">
       {roles.map((r) => (
         <button
           key={r.key}
