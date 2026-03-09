@@ -700,3 +700,89 @@ This is the FUN portal. Clients (buyers) see a completely different experience �
 - Build passes with zero errors
 - Commit message: "checkpoint 6: staff feedback refinements"
 - Push to main
+
+## Checkpoint 7 — Agent Portal + Staff Fixes (CURRENT)
+
+### Database — ALREADY UPDATED
+- stock: added commission_rate (NUMERIC 5,2), commission_type ('percentage'|'flat')
+- Seeded: all stock with agents gets 2.5% commission
+
+### 12 Changes (Agent Portal + Staff)
+
+**1. "My Active Lots" metric = unsold lots (Available + EOI only)**
+- Count only lots with status 'Available' or 'EOI' assigned to this agent
+- Drops off when status changes to 'Under Contract' or beyond
+
+**2. Swap "Commission YTD" card → "All Lots"**
+- Shows total number of ALL lots allocated to this agent (any status)
+
+**3. Add "Settled" metric card to agent dashboard overview**
+- 5 cards total: Active Lots, EOIs, Under Contract, Exchanged, Settled
+
+**4. Lot status change needs explicit Save button**
+- Currently status dropdown auto-saves — add a "Save" button next to dropdown
+- Change only persists when Save is clicked
+- Show confirmation feedback (green tick or toast)
+
+**5. Add "Add Client" button on agent /clients page**
+- Same contact form but scoped to agent context
+- Auto-sets referring_agent_id to the current agent
+
+**6. "Add Client" quick action on dashboard → opens form directly**
+- Currently navigates to clients page — instead, open the add client modal/form directly
+- After save, redirect to clients page
+
+**7. PLATFORM-WIDE RULE: Cannot change lot status from Available unless linked to a customer**
+- This applies to BOTH staff and agent views
+- If lot has no linked contact (via contact_stock), status change is blocked
+- Show message: "Link a customer before changing status"
+- The Reserve flow (from CP6) handles this: Reserve → Link Customer → Status changes to EOI
+- Exception: Staff can override this (add a "Force Status Change" option for staff only)
+
+**8. Commission column on agent lots table**
+- New column "Commission" next to Status in My Lots view
+- Shows: "2.5%" or "$5,000" depending on commission_type
+- Read-only for agents (greyed out / no edit)
+- On STAFF side: commission_rate and commission_type editable in StockForm when allocating
+
+**9. Project logo next to project names in agent portal**
+- Same ProjectLogo component from staff view
+- Apply to: agent sidebar project list, agent project detail, agent lots grouped headers
+
+**10. Merge Docs/Documents tabs → single "Documents" entry**
+- Remove duplicate navigation entry
+- One "Documents" link in agent sidebar under RESOURCES
+- Goes to the documents page
+
+**11. Agent Profile page (/agent/profile)**
+- Shows all agent details as onboarded (name, agency, commission, assigned projects, etc.)
+- EDITABLE fields: email, phone, secondary phone, address (line1, line2, suburb, state, postcode)
+- READ-ONLY fields: first name, last name, agency, commission rate/type, assigned projects
+- Save button for editable fields
+- Clean card layout matching brand
+
+**12. Projects tab in agent sidebar + project pages**
+- Add "Projects" to agent sidebar under MY WORK
+- /agent/projects → grid of assigned project cards with logo, hero image, name, address, stock summary
+- /agent/projects/[id] → project detail with:
+  - Hero image at top (from hero_render_url)
+  - Project name, address
+  - Milestones timeline (read-only, visual progress bar)
+  - Stock table for this project
+  - Documents for this project (agent-visible)
+- DELETE the standalone "Docs" tab from sidebar — documents now live inside each project page
+- Agent bottom tabs: Dashboard, Clients, Lots, Projects, More
+
+### STAFF SIDE CHANGES:
+- StockForm: add commission_rate and commission_type fields (editable by staff)
+- Stock table (staff): add Commission column
+- Enforce "must link customer before status change" rule (with staff override)
+
+### IMPORTANT:
+- Agent portal files are in src/app/agent/ — update those
+- Staff files in src/app/(dashboard)/ — update as needed
+- Reuse existing components (ProjectLogo, StatusBadge, etc.)
+- The customer-must-be-linked rule is THE key business rule — enforce it consistently
+- Build passes with zero errors
+- Commit message: "checkpoint 7: agent portal fixes + commission"
+- Push to main
