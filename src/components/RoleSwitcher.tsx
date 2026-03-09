@@ -24,7 +24,7 @@ export function RoleSwitcher() {
 
   // Keep active in sync if pathname changes (e.g. navigated via sidebar)
   useEffect(() => {
-    if (pathname.startsWith("/agent")) {
+    if (pathname === "/agent" || pathname.startsWith("/agent/")) {
       setActive("agent");
     } else if (pathname.startsWith("/portal")) {
       setActive("client");
