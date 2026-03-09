@@ -44,7 +44,6 @@ const navGroups: NavGroup[] = [
   {
     title: "SETTINGS",
     items: [
-      { label: "Organisation", icon: <OrgIcon />, href: "/organisation" },
       { label: "Profile", icon: <ProfileIcon />, href: "/profile" },
     ],
   },

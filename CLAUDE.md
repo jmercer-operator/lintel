@@ -1123,3 +1123,69 @@ Currently when agent tries to change status from Available, it just blocks with 
 - Build passes with zero errors
 - Commit message: "checkpoint 12: real authentication"
 - Push to main
+
+## Checkpoint 13 — Agent Registration + Client Profile + Cleanup (CURRENT)
+
+### Database — ALREADY UPDATED (do NOT run SQL again)
+- agent_registrations table: id, first_name, last_name, email, phone, agency, message, status ('pending'|'approved'|'rejected'), reviewed_by, reviewed_at, created_at, org_id
+- Admin staff user: info@mproperty.melbourne added to user_profiles
+
+### 4 Changes
+
+**1. Agent registration from login page:**
+- On the login page, add a "Register as Agent" button/link below the sign-in form
+- Clicking navigates to /register (new public page)
+- Registration form fields:
+  - First Name (required)
+  - Last Name (required)
+  - Email (required)
+  - Phone
+  - Agency name
+  - Message/notes (textarea, optional — "Tell us about yourself")
+- On submit: inserts into agent_registrations table with status='pending'
+- Show success message: "Your registration has been submitted. You'll receive an email once approved."
+- No actual auth account created yet — just the request
+
+**Staff side — Registration management:**
+- Add "Registrations" link in staff sidebar under MANAGEMENT
+- /registrations page: shows list of pending agent registrations
+- Each registration card shows: name, email, agency, message, date submitted
+- Two buttons: "Approve" and "Reject"
+- Approve: 
+  1. Creates an agent record in agents table
+  2. Creates a Supabase Auth user with the agent's email
+  3. Creates a user_profile linked to the auth user
+  4. Updates agent_registrations status to 'approved', sets reviewed_by and reviewed_at
+  5. (In production, would send welcome email — for now just update status)
+- Reject: Updates status to 'rejected' with reviewed_by and reviewed_at
+- Show badge count of pending registrations in sidebar
+
+**2. Client profile page:**
+- Create /portal/profile page
+- Shows client's current details (from contacts table)
+- Editable fields: email, phone, address (line1, line2, suburb, state, postcode)
+- Read-only fields: first name, last name, buyer type, FIRB status
+- Save button to update
+- Add "Profile" link to portal navigation/header
+- Clean card layout matching portal design
+
+**3. Remove Organisation tab (ALREADY DONE in code):**
+- Organisation removed from Sidebar.tsx ✓
+- Organisation removed from More page ✓
+- Verify no /organisation route exists
+
+**4. Fix Projects appearing twice in staff tabs:**
+- Projects should appear ONCE in bottom tabs (between Dashboard and Stock) ✓
+- Projects appears ONCE in sidebar under OVERVIEW ✓  
+- More page should NOT list Projects (it's already in bottom tabs) ✓
+- These are already fixed in the code changes above
+
+### IMPORTANT:
+- /register is a PUBLIC page (no auth required)
+- Registration form uses LINTEL branding (emerald, Outfit)
+- The admin email info@mproperty.melbourne already exists in user_profiles
+- For the approval flow, use Supabase Admin API (service role) to create auth users
+- Client profile uses the portal layout (src/app/portal/)
+- Build passes with zero errors
+- Commit message: "checkpoint 13: agent registration + client profile"
+- Push to main

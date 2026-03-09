@@ -1,11 +1,11 @@
 import Link from "next/link";
 
 const menuItems = [
-  { label: "Projects", href: "/projects", icon: "🏢", desc: "View all projects" },
-  { label: "Documents", href: "/documents", icon: "📄", desc: "Coming in Checkpoint 6" },
-  { label: "Reports", href: "/reports", icon: "📈", desc: "Coming in Checkpoint 6" },
-  { label: "Organisation", href: "/settings", icon: "⚙️", desc: "Coming soon" },
-  { label: "Profile", href: "/profile", icon: "👤", desc: "Coming soon" },
+  { label: "Contacts", href: "/contacts", icon: "👥", desc: "Manage contacts" },
+  { label: "Pipeline", href: "/pipeline", icon: "📊", desc: "Sales pipeline" },
+  { label: "Documents", href: "/documents", icon: "📄", desc: "Project documents" },
+  { label: "Reports", href: "/reports", icon: "📈", desc: "Reports & analytics" },
+  { label: "Profile", href: "/profile", icon: "👤", desc: "Your profile" },
 ];
 
 export default function MorePage() {
