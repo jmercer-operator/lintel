@@ -502,3 +502,101 @@ The role system and permission helpers exist in `src/lib/auth/roles.ts`. Current
 - Build passes with zero errors
 - Commit message: "checkpoint 5b: agent portal"
 - Push to main
+
+## Checkpoint 5c — Client Portal (CURRENT)
+
+### Context
+This is the FUN portal. Clients (buyers) see a completely different experience — warm, visual, personal. Not a dashboard — more like a luxury property app. Think: "Your new home is being built. Here's how it's going."
+
+### What To Build
+
+1. **Client portal layout** at `src/app/portal/layout.tsx`:
+   - NO sidebar. Clean, full-width layout.
+   - Minimal top bar: LINTEL wordmark (small), client name, logout
+   - No bottom tabs — this is a simple, focused experience
+   - White background with generous spacing
+   - Feels premium, not corporate
+
+2. **Client home page** (`src/app/portal/page.tsx`):
+   - **Hero section**: Large hero image placeholder (gradient placeholder with project name overlay for now, 400px tall on desktop, 250px mobile)
+     - Project name in large white text overlaid on image
+     - Address underneath in smaller white text
+     - Subtle gradient overlay (dark at bottom for text readability)
+   - **Welcome section**: 
+     - "Welcome, {contact.preferred_name || contact.first_name}" in large warm text
+     - Fun, engaging subtitle: "Your home at {project.name} is taking shape." or "Exciting things are happening at {project.name}."
+     - Rotating/random warm messages from a curated list
+   - **Milestone progress bar**:
+     - Horizontal progress bar showing construction stages
+     - Current stage highlighted with pulsing emerald dot
+     - Completed stages: solid emerald with ✓
+     - Upcoming: grey dots
+     - Below bar: current stage name + description
+     - "X of Y milestones complete" text
+     - Progress percentage in large bold text
+   - **Your lot summary card**:
+     - Lot number, bedrooms, bathrooms, car spaces, internal/external area
+     - Status badge (with fun wording: "Under Contract" → "Contracts exchanged — you're locked in! 🎉")
+     - Price (if appropriate — maybe hide for clients? Staff decision later)
+   - **Your agent card**:
+     - Agent avatar (large circle with initials, emerald background)
+     - Agent name, company
+     - Phone (tap to call on mobile)
+     - Email (tap to email)
+     - Fun line: "Your dedicated agent" or "{agent.first_name} is here to help with anything you need."
+   - **Documents section**:
+     - Only documents with visibility='client' from their project
+     - Plus their own client documents (signed contract, etc.)
+     - Download buttons
+     - Clean card layout, not a table
+   - **Footer**: 
+     - "© 2026 {org.name}. Powered by LINTEL."
+     - Small LINTEL logo
+
+3. **Fun wording library** (`src/lib/portal-messages.ts`):
+   - Array of warm, engaging messages per milestone status:
+     - Planning: "The blueprints are ready — your home is officially on the map!"
+     - Demolition: "Out with the old! The site is being prepared for something amazing."
+     - Foundation: "The foundation is going down — solid ground for your future home."
+     - Frame: "The skeleton is rising! You'll start to see your home take shape."
+     - Lock Up: "Walls are up, roof is on — it's starting to look like home!"
+     - Fit Out: "The finishing touches are happening — kitchens, bathrooms, the works!"
+     - Completion: "Almost there! Your new home is nearly ready for you. 🏠"
+     - Complete: "Congratulations! Your home at {project} is complete! 🎉🏡"
+
+4. **Client portal preview**:
+   - For demo: use contact David Chen (d0000000-0000-0000-0000-000000000001), linked to Lot 202 at Crossley & Bourke
+   - Role switcher "Client" button navigates to /portal
+
+5. **Responsive design**:
+   - Mobile-first: hero image smaller, cards stack, agent card full-width
+   - Touch-friendly: large tap targets for phone/email
+   - Feels like a native app on mobile
+
+6. **Animations** (subtle):
+   - Milestone progress bar animates on load (fills up to current progress)
+   - Cards fade in on scroll (use CSS only, no heavy JS)
+   - Pulsing dot on current milestone
+
+### STYLE RULES (Client portal specific):
+- MORE spacious than staff/agent views — lots of white space
+- Larger text sizes for key info
+- Rounded corners: 16px for cards (larger than staff view)
+- Subtle warm shadows: 0 4px 12px rgba(0,0,0,0.06)
+- Hero gradient: linear-gradient(to top, rgba(0,0,0,0.7), transparent)
+- Status messages use emoji sparingly but effectively
+- Font sizes: hero title 36px (mobile 28px), welcome 28px (mobile 22px), body 16px
+- NO tables in client view — everything is cards
+- Emerald #1A9E6F for progress/positive, Gold #D4A855 for highlights
+- NO BLUE
+
+### IMPORTANT:
+- Client portal is at /portal — separate from /agent and /(dashboard)
+- Client sees ONLY their project, their lot, their agent, their documents
+- No pricing visible to clients (remove price from lot summary)
+- No access to other clients, other lots, or admin features
+- For demo, hardcode contact_id to David Chen until real auth is built
+- Keep all existing staff and agent pages working perfectly
+- Build passes with zero errors
+- Commit message: "checkpoint 5c: client portal"
+- Push to main
