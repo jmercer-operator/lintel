@@ -16,6 +16,7 @@ interface Props {
 export function AgentsClient({ agents, projects }: Props) {
   const router = useRouter();
   const [showAddModal, setShowAddModal] = useState(false);
+  const [viewMode, setViewMode] = useState<"grid" | "list">("grid");
 
   return (
     <div className="p-6 md:p-8">
@@ -27,14 +28,80 @@ export function AgentsClient({ agents, projects }: Props) {
             {agents.length} agent{agents.length !== 1 ? "s" : ""} — {agents.filter((a) => a.status === "active").length} active
           </p>
         </div>
-        <Button onClick={() => setShowAddModal(true)}>
-          <PlusIcon />
-          Add Agent
-        </Button>
+        <div className="flex items-center gap-3">
+          {/* View toggle */}
+          <div className="flex items-center bg-bg-alt rounded-lg p-0.5 border border-border">
+            <button
+              onClick={() => setViewMode("grid")}
+              className={`p-1.5 rounded-md transition-all cursor-pointer ${viewMode === "grid" ? "bg-white shadow-sm text-heading" : "text-muted hover:text-secondary"}`}
+              title="Grid view"
+            >
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><rect x="3" y="3" width="7" height="7" rx="1" /><rect x="14" y="3" width="7" height="7" rx="1" /><rect x="3" y="14" width="7" height="7" rx="1" /><rect x="14" y="14" width="7" height="7" rx="1" /></svg>
+            </button>
+            <button
+              onClick={() => setViewMode("list")}
+              className={`p-1.5 rounded-md transition-all cursor-pointer ${viewMode === "list" ? "bg-white shadow-sm text-heading" : "text-muted hover:text-secondary"}`}
+              title="List view"
+            >
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><line x1="8" y1="6" x2="21" y2="6" /><line x1="8" y1="12" x2="21" y2="12" /><line x1="8" y1="18" x2="21" y2="18" /><line x1="3" y1="6" x2="3.01" y2="6" /><line x1="3" y1="12" x2="3.01" y2="12" /><line x1="3" y1="18" x2="3.01" y2="18" /></svg>
+            </button>
+          </div>
+          <Button onClick={() => setShowAddModal(true)}>
+            <PlusIcon />
+            Add Agent
+          </Button>
+        </div>
       </div>
 
-      {/* Agent Cards Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-5">
+      {/* List View */}
+      {viewMode === "list" && agents.length > 0 && (
+        <div className="bg-white rounded-[14px] border border-border overflow-hidden">
+          {agents.map((agent, i) => (
+            <div
+              key={agent.id}
+              onClick={() => router.push(`/agents/${agent.id}`)}
+              className={`flex items-center gap-4 p-4 cursor-pointer hover:bg-bg transition-colors ${i > 0 ? "border-t border-border" : ""}`}
+            >
+              {agent.logo_url ? (
+                <img src={agent.logo_url} alt="" className="w-10 h-10 rounded-[8px] object-cover flex-shrink-0" />
+              ) : (
+                <div className="w-10 h-10 rounded-[8px] bg-emerald-primary/10 flex items-center justify-center text-emerald-primary font-semibold text-sm flex-shrink-0">
+                  {agent.first_name[0]}{agent.last_name[0]}
+                </div>
+              )}
+              <div className="flex-1 min-w-0">
+                <div className="flex items-center gap-2">
+                  <h3 className="font-semibold text-heading truncate">{agent.first_name} {agent.last_name}</h3>
+                  <span className={`px-2 py-0.5 rounded-full text-[10px] font-semibold uppercase flex-shrink-0 ${
+                    agent.status === "active" ? "bg-[#1A9E6F]/10 text-[#1A9E6F]" : "bg-bg-alt text-secondary"
+                  }`}>{agent.status}</span>
+                </div>
+                <p className="text-sm text-secondary truncate">
+                  {[agent.agency, agent.phone, agent.email].filter(Boolean).join(" · ")}
+                </p>
+              </div>
+              <div className="hidden sm:flex items-center gap-6 text-center flex-shrink-0">
+                <div>
+                  <p className="text-sm font-bold text-heading font-mono">{agent.project_count}</p>
+                  <p className="text-[10px] text-muted">Projects</p>
+                </div>
+                <div>
+                  <p className="text-sm font-bold text-heading font-mono">{agent.lot_count}</p>
+                  <p className="text-[10px] text-muted">Lots</p>
+                </div>
+                <div>
+                  <p className="text-sm font-bold text-[#1A9E6F] font-mono">{agent.available_count}</p>
+                  <p className="text-[10px] text-muted">Available</p>
+                </div>
+              </div>
+              <svg className="w-4 h-4 text-muted flex-shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><polyline points="9 18 15 12 9 6" /></svg>
+            </div>
+          ))}
+        </div>
+      )}
+
+      {/* Grid View */}
+      {viewMode === "grid" && <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-5">
         {agents.map((agent) => (
           <div
             key={agent.id}
@@ -92,7 +159,7 @@ export function AgentsClient({ agents, projects }: Props) {
             </Card>
           </div>
         ))}
-      </div>
+      </div>}
 
       {agents.length === 0 && (
         <div className="bg-white rounded-[14px] border border-border p-12 text-center">
