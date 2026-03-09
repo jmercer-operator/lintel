@@ -138,7 +138,6 @@ export function ContactsClient({ contacts, agents, projects, currentTab, searchQ
             <thead>
               <tr className="border-b border-border bg-bg-alt/50">
                 <th className="text-left px-4 py-3 font-semibold text-secondary text-xs uppercase tracking-wider">Name</th>
-                <th className="text-left px-4 py-3 font-semibold text-secondary text-xs uppercase tracking-wider">Email</th>
                 <th className="text-left px-4 py-3 font-semibold text-secondary text-xs uppercase tracking-wider">Phone</th>
                 <th className="text-left px-4 py-3 font-semibold text-secondary text-xs uppercase tracking-wider">Type</th>
                 <th className="text-left px-4 py-3 font-semibold text-secondary text-xs uppercase tracking-wider">Agent</th>
@@ -164,7 +163,6 @@ export function ContactsClient({ contacts, agents, projects, currentTab, searchQ
                     <td className="px-4 py-3 font-medium text-heading">
                       {contact.first_name} {contact.last_name}
                     </td>
-                    <td className="px-4 py-3 text-secondary text-xs">{contact.email || "—"}</td>
                     <td className="px-4 py-3 text-secondary font-mono text-xs">{contact.phone || "—"}</td>
                     <td className="px-4 py-3">
                       <ClassificationBadge classification={contact.computed_classification} />
