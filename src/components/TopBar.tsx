@@ -2,8 +2,13 @@
 
 import { Logo } from "./Logo";
 import { Avatar } from "./Avatar";
+import { RoleSwitcher } from "./RoleSwitcher";
 
-export function TopBar() {
+interface TopBarProps {
+  avatarName?: string;
+}
+
+export function TopBar({ avatarName = "AM" }: TopBarProps) {
   return (
     <header className="h-16 bg-white border-b border-border flex items-center justify-between px-5 sticky top-0 z-20">
       {/* Mobile: logo + hamburger */}
@@ -42,6 +47,8 @@ export function TopBar() {
 
       {/* Right side */}
       <div className="flex items-center gap-2">
+        {/* Role Switcher */}
+        <RoleSwitcher />
         {/* Mobile: hamburger menu */}
         <button className="lg:hidden p-2 rounded-[var(--radius-input)] hover:bg-bg-alt transition-colors text-secondary cursor-pointer min-h-[44px] min-w-[44px] flex items-center justify-center">
           <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -62,7 +69,7 @@ export function TopBar() {
         </button>
 
         {/* User avatar */}
-        <Avatar name="AM" size="sm" />
+        <Avatar name={avatarName} size="sm" />
       </div>
     </header>
   );

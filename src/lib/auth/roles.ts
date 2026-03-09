@@ -12,13 +12,30 @@ export interface UserProfile {
   updated_at: string;
 }
 
+const ROLE_KEY = "lintel-role-preview";
+
 /**
- * Get current user role — for now returns 'staff' (preview mode).
- * Will be replaced with actual auth lookup later.
+ * Get current user role from localStorage (preview mode).
+ * Falls back to 'staff' on server or when not set.
  */
 export function getCurrentUserRole(): UserRole {
+  if (typeof window === "undefined") return "staff";
+  const stored = localStorage.getItem(ROLE_KEY);
+  if (stored === "staff" || stored === "agent" || stored === "client") return stored;
   return "staff";
 }
+
+/**
+ * Set the current role preview in localStorage.
+ */
+export function setCurrentUserRole(role: UserRole): void {
+  if (typeof window === "undefined") return;
+  localStorage.setItem(ROLE_KEY, role);
+}
+
+/** Default agent for preview mode */
+export const PREVIEW_AGENT_ID = "c0000000-0000-0000-0000-000000000001";
+export const PREVIEW_ORG_ID = "a0000000-0000-0000-0000-000000000001";
 
 /* ─── Permission helpers ─── */
 

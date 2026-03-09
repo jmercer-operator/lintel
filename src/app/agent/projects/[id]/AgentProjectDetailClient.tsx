@@ -1,0 +1,275 @@
+"use client";
+
+import { useState } from "react";
+import Link from "next/link";
+import { Card } from "@/components/Card";
+import { StatusBadge } from "@/components/StatusBadge";
+import type { ProjectWithStats, StockItem, StockStatus } from "@/lib/types";
+import { formatPrice, formatArea, STATUS_COLORS } from "@/lib/types";
+import type { ProjectDocument, DocumentCategory } from "@/lib/data/documents";
+import type { ProjectMilestone } from "@/lib/data/milestones";
+
+function formatFileSize(bytes: number): string {
+  if (bytes < 1024) return `${bytes} B`;
+  if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
+  return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
+}
+
+function getMilestoneProgress(milestones: ProjectMilestone[]): number {
+  if (milestones.length === 0) return 0;
+  const completed = milestones.filter((m) => m.status === "completed").length;
+  return Math.round((completed / milestones.length) * 100);
+}
+
+type Tab = "stock" | "documents" | "milestones";
+
+interface Props {
+  project: ProjectWithStats;
+  stock: StockItem[];
+  milestones: ProjectMilestone[];
+  documents: ProjectDocument[];
+  categories: DocumentCategory[];
+}
+
+export function AgentProjectDetailClient({ project, stock, milestones, documents, categories }: Props) {
+  const [activeTab, setActiveTab] = useState<Tab>("stock");
+  const [statusFilter, setStatusFilter] = useState<string>("All");
+  const progress = getMilestoneProgress(milestones);
+
+  const filteredStock = statusFilter === "All" ? stock : stock.filter((s) => s.status === statusFilter);
+
+  // Group docs by category
+  const docsByCategory: Record<string, ProjectDocument[]> = {};
+  for (const doc of documents) {
+    if (!docsByCategory[doc.category_id]) docsByCategory[doc.category_id] = [];
+    docsByCategory[doc.category_id].push(doc);
+  }
+
+  const tabs: { key: Tab; label: string }[] = [
+    { key: "stock", label: "Stock" },
+    { key: "documents", label: "Documents" },
+    { key: "milestones", label: "Milestones" },
+  ];
+
+  return (
+    <div className="space-y-6">
+      {/* Back */}
+      <Link href="/agent" className="inline-flex items-center gap-1 text-sm text-secondary hover:text-heading transition-colors">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+          <polyline points="15 18 9 12 15 6" />
+        </svg>
+        Back to Dashboard
+      </Link>
+
+      {/* Header */}
+      <div>
+        <h1 className="text-2xl font-bold text-heading">{project.name}</h1>
+        <p className="text-secondary text-sm mt-1">{project.address}</p>
+      </div>
+
+      {/* Stats */}
+      <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
+        {[
+          { label: "Total", value: project.stats.total, color: "text-heading" },
+          { label: "Available", value: project.stats.available, color: "text-[#1A9E6F]" },
+          { label: "EOI", value: project.stats.eoi, color: "text-[#D4A855]" },
+          { label: "Under Contract", value: project.stats.underContract, color: "text-[#7B3FA0]" },
+          { label: "Settled", value: project.stats.settled, color: "text-[#2D8C5A]" },
+        ].map((s) => (
+          <Card key={s.label} padding="sm">
+            <p className="text-[10px] font-semibold text-muted uppercase tracking-wider">{s.label}</p>
+            <p className={`text-2xl font-bold font-mono ${s.color}`}>{s.value}</p>
+          </Card>
+        ))}
+      </div>
+
+      {/* Tabs */}
+      <div className="border-b border-border">
+        <div className="flex gap-6">
+          {tabs.map((tab) => (
+            <button
+              key={tab.key}
+              onClick={() => setActiveTab(tab.key)}
+              className={`pb-3 text-sm font-semibold transition-colors cursor-pointer ${
+                activeTab === tab.key
+                  ? "text-emerald-primary border-b-2 border-emerald-primary"
+                  : "text-secondary hover:text-heading"
+              }`}
+            >
+              {tab.label}
+            </button>
+          ))}
+        </div>
+      </div>
+
+      {/* Tab Content */}
+      {activeTab === "stock" && (
+        <div className="space-y-4">
+          {/* Status filter */}
+          <div className="flex flex-wrap gap-2">
+            {["All", "Available", "EOI", "Under Contract", "Exchanged", "Settled"].map((s) => (
+              <button
+                key={s}
+                onClick={() => setStatusFilter(s)}
+                className={`px-3 py-1.5 text-xs font-semibold rounded-full transition-all cursor-pointer ${
+                  statusFilter === s
+                    ? "bg-emerald-primary text-white"
+                    : "bg-bg-alt text-secondary hover:text-heading border border-border"
+                }`}
+              >
+                {s}
+              </button>
+            ))}
+          </div>
+
+          <Card padding="sm">
+            <div className="overflow-x-auto">
+              <table className="w-full text-sm">
+                <thead>
+                  <tr className="border-b border-border">
+                    <th className="text-left py-3 px-3 text-[11px] font-semibold text-muted uppercase tracking-wider">Lot</th>
+                    <th className="text-center py-3 px-3 text-[11px] font-semibold text-muted uppercase tracking-wider">Bed</th>
+                    <th className="text-center py-3 px-3 text-[11px] font-semibold text-muted uppercase tracking-wider">Bath</th>
+                    <th className="text-center py-3 px-3 text-[11px] font-semibold text-muted uppercase tracking-wider">Car</th>
+                    <th className="text-right py-3 px-3 text-[11px] font-semibold text-muted uppercase tracking-wider">m² Int</th>
+                    <th className="text-right py-3 px-3 text-[11px] font-semibold text-muted uppercase tracking-wider">m² Ext</th>
+                    <th className="text-right py-3 px-3 text-[11px] font-semibold text-muted uppercase tracking-wider">Price</th>
+                    <th className="text-left py-3 px-3 text-[11px] font-semibold text-muted uppercase tracking-wider">Status</th>
+                    <th className="text-left py-3 px-3 text-[11px] font-semibold text-muted uppercase tracking-wider">Agent</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {filteredStock.map((lot) => (
+                    <tr key={lot.id} className="border-b border-border last:border-0 hover:bg-bg-alt/50 transition-colors">
+                      <td className="py-3 px-3 font-mono font-semibold text-heading">{lot.lot_number}</td>
+                      <td className="py-3 px-3 text-center text-secondary">{lot.bedrooms}</td>
+                      <td className="py-3 px-3 text-center text-secondary">{lot.bathrooms}</td>
+                      <td className="py-3 px-3 text-center text-secondary">{lot.car_spaces}</td>
+                      <td className="py-3 px-3 text-right text-secondary font-mono">{formatArea(lot.internal_area)}</td>
+                      <td className="py-3 px-3 text-right text-secondary font-mono">{formatArea(lot.external_area)}</td>
+                      <td className="py-3 px-3 text-right font-mono font-semibold text-heading">{formatPrice(lot.price)}</td>
+                      <td className="py-3 px-3"><StatusBadge status={lot.status as StockStatus} /></td>
+                      <td className="py-3 px-3 text-secondary text-xs">{lot.agent_name || "—"}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </Card>
+        </div>
+      )}
+
+      {activeTab === "documents" && (
+        <div className="space-y-4">
+          {documents.length === 0 ? (
+            <Card padding="lg">
+              <div className="text-center py-8">
+                <p className="text-heading font-semibold">No documents available</p>
+                <p className="text-sm text-muted mt-1">No documents have been shared for this project</p>
+              </div>
+            </Card>
+          ) : (
+            categories
+              .filter((cat) => docsByCategory[cat.id]?.length > 0)
+              .map((cat) => (
+                <Card key={cat.id} padding="md">
+                  <h3 className="text-sm font-semibold text-heading mb-3">{cat.name}</h3>
+                  <div className="space-y-2">
+                    {docsByCategory[cat.id].map((doc) => (
+                      <div key={doc.id} className="flex items-center justify-between py-2 border-b border-border last:border-0">
+                        <div className="flex items-center gap-3 min-w-0">
+                          <svg className="flex-shrink-0 text-muted" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                            <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
+                            <polyline points="14 2 14 8 20 8" />
+                          </svg>
+                          <div className="min-w-0">
+                            <p className="text-sm font-medium text-heading truncate">{doc.file_name}</p>
+                            <p className="text-xs text-muted">{formatFileSize(doc.file_size)}</p>
+                          </div>
+                        </div>
+                        <a
+                          href={`/api/agent/download?path=${encodeURIComponent(doc.file_path)}&bucket=project-documents`}
+                          className="flex-shrink-0 px-3 py-1.5 text-xs font-semibold text-emerald-primary border border-emerald-primary/20 rounded-[var(--radius-button)] hover:bg-emerald-primary/5 transition-colors"
+                        >
+                          Download
+                        </a>
+                      </div>
+                    ))}
+                  </div>
+                </Card>
+              ))
+          )}
+        </div>
+      )}
+
+      {activeTab === "milestones" && (
+        <Card padding="md">
+          {milestones.length === 0 ? (
+            <div className="text-center py-8">
+              <p className="text-heading font-semibold">No milestones yet</p>
+              <p className="text-sm text-muted mt-1">Milestones will appear here when added</p>
+            </div>
+          ) : (
+            <div className="space-y-6">
+              {/* Progress bar */}
+              <div>
+                <div className="flex items-center justify-between mb-2">
+                  <span className="text-sm font-semibold text-heading">Construction Progress</span>
+                  <span className="text-sm font-bold text-emerald-primary font-mono">{progress}%</span>
+                </div>
+                <div className="w-full h-2 bg-bg-alt rounded-full overflow-hidden">
+                  <div
+                    className="h-full bg-emerald-primary rounded-full transition-all duration-500"
+                    style={{ width: `${progress}%` }}
+                  />
+                </div>
+              </div>
+
+              {/* Milestone list */}
+              <div className="relative">
+                {/* Vertical line */}
+                <div className="absolute left-[11px] top-0 bottom-0 w-px bg-border" />
+                <div className="space-y-4">
+                  {milestones.map((m) => (
+                    <div key={m.id} className="flex items-start gap-4 relative">
+                      {/* Icon */}
+                      <div className="relative z-10 flex-shrink-0">
+                        {m.status === "completed" ? (
+                          <div className="w-6 h-6 rounded-full bg-emerald-primary flex items-center justify-center">
+                            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
+                              <polyline points="20 6 9 17 4 12" />
+                            </svg>
+                          </div>
+                        ) : m.status === "in_progress" ? (
+                          <div className="w-6 h-6 rounded-full border-2 border-emerald-primary bg-white flex items-center justify-center">
+                            <div className="w-2.5 h-2.5 rounded-full bg-emerald-primary animate-pulse" />
+                          </div>
+                        ) : (
+                          <div className="w-6 h-6 rounded-full border-2 border-border bg-white" />
+                        )}
+                      </div>
+                      {/* Content */}
+                      <div className="flex-1 pb-4">
+                        <p className={`text-sm font-semibold ${m.status === "upcoming" ? "text-muted" : "text-heading"}`}>
+                          {m.name}
+                        </p>
+                        {m.target_date && (
+                          <p className="text-xs text-muted mt-0.5">
+                            {m.status === "completed" ? "Completed" : "Target"}: {new Date(m.target_date).toLocaleDateString("en-AU", { day: "numeric", month: "short", year: "numeric" })}
+                          </p>
+                        )}
+                        {m.description && (
+                          <p className="text-xs text-secondary mt-1">{m.description}</p>
+                        )}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+          )}
+        </Card>
+      )}
+    </div>
+  );
+}
