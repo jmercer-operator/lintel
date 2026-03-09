@@ -94,7 +94,7 @@ export function AgentClientsClient({ clients, agents, agentId }: Props) {
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
           {filtered.map((client) => (
-            <Card key={client.id} padding="md" className="hover:border-emerald-primary/30">
+            <Card key={client.id} padding="md" className="hover:border-emerald-primary/30 cursor-pointer" onClick={() => router.push(`/agent/clients/${client.id}`)}>
               <div className="flex items-start gap-3">
                 <Avatar name={`${client.first_name} ${client.last_name}`} size="md" />
                 <div className="flex-1 min-w-0">

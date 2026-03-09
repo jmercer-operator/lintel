@@ -1,10 +1,15 @@
 import { PREVIEW_AGENT_ID } from "@/lib/auth/roles";
-import { getAgentStock } from "@/lib/data/agent-portal";
+import { getAgentStock, getAgentClients } from "@/lib/data/agent-portal";
+import { getAgents } from "@/lib/data/agents";
 import { createClient } from "@/lib/supabase/server";
 import { AgentLotsClient } from "./AgentLotsClient";
 
 export default async function AgentLotsPage() {
-  const stock = await getAgentStock(PREVIEW_AGENT_ID);
+  const [stock, agentClientsRaw, agents] = await Promise.all([
+    getAgentStock(PREVIEW_AGENT_ID),
+    getAgentClients(PREVIEW_AGENT_ID),
+    getAgents(),
+  ]);
 
   // Build map of stock_id → has linked customer
   const supabase = await createClient();
@@ -22,5 +27,23 @@ export default async function AgentLotsPage() {
     }
   }
 
-  return <AgentLotsClient stock={stock} stockCustomerMap={stockCustomerMap} />;
+  // Simplify agent contacts for the modal
+  const agentContacts = agentClientsRaw.map((c) => ({
+    id: c.id,
+    first_name: c.first_name,
+    last_name: c.last_name,
+    email: c.email,
+    phone: c.phone,
+    classification: c.classification,
+  }));
+
+  return (
+    <AgentLotsClient
+      stock={stock}
+      stockCustomerMap={stockCustomerMap}
+      agentContacts={agentContacts}
+      agents={agents}
+      agentId={PREVIEW_AGENT_ID}
+    />
+  );
 }

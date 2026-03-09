@@ -4,8 +4,9 @@ import { useState, useTransition } from "react";
 import { Card } from "@/components/Card";
 import { StatusBadge } from "@/components/StatusBadge";
 import { ProjectLogo } from "@/components/ProjectLogo";
+import { AgentLinkCustomerModal } from "@/components/AgentLinkCustomerModal";
 import { useRouter } from "next/navigation";
-import type { StockItem, StockStatus } from "@/lib/types";
+import type { StockItem, StockStatus, Agent } from "@/lib/types";
 import { formatPrice, formatArea, ALL_STATUSES } from "@/lib/types";
 
 // Agents cannot set status to "Settled"
@@ -16,19 +17,35 @@ interface LotWithCommission extends StockItem {
   project_logo_url: string | null;
 }
 
-interface Props {
-  stock: LotWithCommission[];
-  stockCustomerMap: Record<string, boolean>; // stock_id → has linked customer
+interface AgentContact {
+  id: string;
+  first_name: string;
+  last_name: string;
+  email: string | null;
+  phone: string | null;
+  classification: string;
 }
 
-export function AgentLotsClient({ stock, stockCustomerMap }: Props) {
+interface Props {
+  stock: LotWithCommission[];
+  stockCustomerMap: Record<string, boolean>;
+  agentContacts: AgentContact[];
+  agents: Agent[];
+  agentId: string;
+}
+
+export function AgentLotsClient({ stock, stockCustomerMap, agentContacts, agents, agentId }: Props) {
   const [filter, setFilter] = useState<string>("All");
-  const [pendingChanges, setPendingChanges] = useState<Record<string, string>>({}); // lotId → newStatus
+  const [pendingChanges, setPendingChanges] = useState<Record<string, string>>({});
   const [savingId, setSavingId] = useState<string | null>(null);
   const [savedId, setSavedId] = useState<string | null>(null);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const [isPending, startTransition] = useTransition();
   const router = useRouter();
+
+  // Link customer modal state
+  const [linkModalOpen, setLinkModalOpen] = useState(false);
+  const [linkModalLot, setLinkModalLot] = useState<LotWithCommission | null>(null);
 
   // Group by project
   const grouped: Record<string, { projectName: string; projectLogoUrl: string | null; lots: LotWithCommission[] }> = {};
@@ -47,8 +64,16 @@ export function AgentLotsClient({ stock, stockCustomerMap }: Props) {
   })).filter((g) => g.lots.length > 0);
 
   function handleStatusSelect(lotId: string, newStatus: string, currentStatus: string) {
+    const lot = stock.find((l) => l.id === lotId);
+
+    // If changing from Available to something else and no customer linked, show modal
+    if (lot && currentStatus === "Available" && newStatus !== "Available" && !stockCustomerMap[lotId]) {
+      setLinkModalLot(lot);
+      setLinkModalOpen(true);
+      return;
+    }
+
     if (newStatus === currentStatus) {
-      // Remove pending change
       setPendingChanges((prev) => {
         const next = { ...prev };
         delete next[lotId];
@@ -63,13 +88,6 @@ export function AgentLotsClient({ stock, stockCustomerMap }: Props) {
   async function handleSave(lotId: string) {
     const newStatus = pendingChanges[lotId];
     if (!newStatus) return;
-
-    // Check must-link-customer rule: cannot change from Available unless customer linked
-    const lot = stock.find((l) => l.id === lotId);
-    if (lot && lot.status === "Available" && newStatus !== "Available" && !stockCustomerMap[lotId]) {
-      setErrorMsg("Link a customer before changing status");
-      return;
-    }
 
     setSavingId(lotId);
     setErrorMsg(null);
@@ -226,6 +244,23 @@ export function AgentLotsClient({ stock, stockCustomerMap }: Props) {
             </Card>
           </div>
         ))
+      )}
+
+      {/* Link Customer Modal */}
+      {linkModalLot && (
+        <AgentLinkCustomerModal
+          open={linkModalOpen}
+          onClose={() => {
+            setLinkModalOpen(false);
+            setLinkModalLot(null);
+          }}
+          lotId={linkModalLot.id}
+          lotNumber={linkModalLot.lot_number}
+          projectId={linkModalLot.project_id}
+          agents={agents}
+          agentContacts={agentContacts}
+          agentId={agentId}
+        />
       )}
     </div>
   );

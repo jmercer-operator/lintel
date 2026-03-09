@@ -139,7 +139,7 @@ export async function createContactAction(formData: FormData) {
 
   const firbRequired = formData.get("firb_required") === "true" || formData.get("firb_required") === "on";
 
-  const { error } = await supabase.from("contacts").insert({
+  const { data: newContact, error } = await supabase.from("contacts").insert({
     org_id: DEFAULT_ORG_ID,
     classification: (formData.get("classification") as string) || "prospect",
     buyer_type: buyerType,
@@ -182,11 +182,58 @@ export async function createContactAction(formData: FormData) {
     marketing_consent: formData.get("marketing_consent") === "on" || formData.get("marketing_consent") === "true",
     tags,
     notes: (formData.get("notes") as string) || null,
-  });
+  }).select().single();
 
   if (error) return { error: error.message };
 
+  // Auto-link to stock if default_stock_id was provided (from Reserve/Link flow)
+  const defaultStockId = formData.get("default_stock_id") as string;
+  const defaultProjectId = formData.get("default_project_id") as string;
+  if (defaultStockId && defaultProjectId && newContact) {
+    // Check if this lot already has a buyer
+    const { data: existingLinks } = await supabase
+      .from("contact_stock")
+      .select("id")
+      .eq("stock_id", defaultStockId);
+
+    const role = (existingLinks && existingLinks.length > 0) ? "co_buyer" : "buyer";
+
+    await supabase.from("contact_stock").insert({
+      contact_id: newContact.id,
+      stock_id: defaultStockId,
+      project_id: defaultProjectId,
+      role,
+    });
+
+    // Auto-change lot status to EOI
+    await supabase
+      .from("stock")
+      .update({ status: "EOI", updated_at: new Date().toISOString() })
+      .eq("id", defaultStockId);
+
+    // Auto-add project slug tag
+    const { data: project } = await supabase
+      .from("projects")
+      .select("name")
+      .eq("id", defaultProjectId)
+      .single();
+
+    if (project) {
+      const slug = project.name.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/(^-|-$)/g, "");
+      if (!tags.includes(slug)) {
+        await supabase
+          .from("contacts")
+          .update({ tags: [...tags, slug] })
+          .eq("id", newContact.id);
+      }
+    }
+
+    revalidatePath(`/projects/${defaultProjectId}`);
+  }
+
   revalidatePath("/contacts");
+  revalidatePath("/agent/lots");
+  revalidatePath("/agent/clients");
   return { success: true };
 }
 
