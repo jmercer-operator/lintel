@@ -51,7 +51,7 @@ export const welcomeMessages: string[] = [
 export const statusFunMessages: Record<string, string> = {
   Available: "Your lot is reserved and ready.",
   EOI: "Expression of interest noted — you're in the running! 🎯",
-  "Under Contract": "Contracts exchanged — you're locked in! 🎉",
+  "Under Contract": "Congratulations — your contracts have been exchanged! 🎉",
   Exchanged: "Everything's signed and sealed. Your home awaits! ✅",
   Settled: "Congratulations! Welcome to your new home! 🏡🎊",
 };

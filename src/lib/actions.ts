@@ -864,3 +864,187 @@ export async function updateMilestoneAction(formData: FormData) {
   revalidatePath(`/projects/${project_id}`);
   return { success: true };
 }
+
+/* ─── Progress Media Actions ─── */
+
+export async function uploadProgressPictureAction(formData: FormData) {
+  const supabase = await createClient();
+
+  const project_id = formData.get("project_id") as string;
+  const files = formData.getAll("files") as File[];
+
+  if (!project_id) return { error: "Project ID is required" };
+  if (files.length === 0) return { error: "No files selected" };
+
+  // Get current project to fetch existing pictures
+  const { data: project, error: fetchError } = await supabase
+    .from("projects")
+    .select("progress_pictures, org_id")
+    .eq("id", project_id)
+    .single();
+
+  if (fetchError || !project) return { error: "Project not found" };
+
+  const existingPictures: string[] = project.progress_pictures || [];
+  const newUrls: string[] = [];
+
+  for (const file of files) {
+    const timestamp = Date.now();
+    const safeName = file.name.replace(/[^a-zA-Z0-9._-]/g, "_");
+    const path = `${project.org_id}/progress/${project_id}/pictures/${timestamp}_${safeName}`;
+
+    const { error: uploadError } = await supabase.storage
+      .from("project-documents")
+      .upload(path, file, { upsert: false });
+
+    if (uploadError) return { error: `Upload failed: ${uploadError.message}` };
+
+    // Get public URL
+    const { data: urlData } = supabase.storage
+      .from("project-documents")
+      .getPublicUrl(path);
+
+    newUrls.push(urlData.publicUrl);
+  }
+
+  // Append new URLs to existing
+  const { error: updateError } = await supabase
+    .from("projects")
+    .update({ progress_pictures: [...existingPictures, ...newUrls], updated_at: new Date().toISOString() })
+    .eq("id", project_id);
+
+  if (updateError) return { error: updateError.message };
+
+  revalidatePath(`/projects/${project_id}`);
+  return { success: true, urls: newUrls };
+}
+
+export async function deleteProgressPictureAction(formData: FormData) {
+  const supabase = await createClient();
+
+  const project_id = formData.get("project_id") as string;
+  const url = formData.get("url") as string;
+
+  if (!project_id || !url) return { error: "Missing required fields" };
+
+  const { data: project, error: fetchError } = await supabase
+    .from("projects")
+    .select("progress_pictures")
+    .eq("id", project_id)
+    .single();
+
+  if (fetchError || !project) return { error: "Project not found" };
+
+  const pictures: string[] = project.progress_pictures || [];
+  const updated = pictures.filter((p: string) => p !== url);
+
+  // Try to delete from storage
+  try {
+    const urlObj = new URL(url);
+    const pathMatch = urlObj.pathname.match(/\/object\/public\/project-documents\/(.+)$/);
+    if (pathMatch) {
+      await supabase.storage.from("project-documents").remove([pathMatch[1]]);
+    }
+  } catch {
+    // ignore storage deletion errors
+  }
+
+  const { error: updateError } = await supabase
+    .from("projects")
+    .update({ progress_pictures: updated, updated_at: new Date().toISOString() })
+    .eq("id", project_id);
+
+  if (updateError) return { error: updateError.message };
+
+  revalidatePath(`/projects/${project_id}`);
+  return { success: true };
+}
+
+export async function uploadProgressVideoAction(formData: FormData) {
+  const supabase = await createClient();
+
+  const project_id = formData.get("project_id") as string;
+  const files = formData.getAll("files") as File[];
+
+  if (!project_id) return { error: "Project ID is required" };
+  if (files.length === 0) return { error: "No files selected" };
+
+  const { data: project, error: fetchError } = await supabase
+    .from("projects")
+    .select("progress_videos, org_id")
+    .eq("id", project_id)
+    .single();
+
+  if (fetchError || !project) return { error: "Project not found" };
+
+  const existingVideos: string[] = project.progress_videos || [];
+  const newUrls: string[] = [];
+
+  for (const file of files) {
+    const timestamp = Date.now();
+    const safeName = file.name.replace(/[^a-zA-Z0-9._-]/g, "_");
+    const path = `${project.org_id}/progress/${project_id}/videos/${timestamp}_${safeName}`;
+
+    const { error: uploadError } = await supabase.storage
+      .from("project-documents")
+      .upload(path, file, { upsert: false });
+
+    if (uploadError) return { error: `Upload failed: ${uploadError.message}` };
+
+    const { data: urlData } = supabase.storage
+      .from("project-documents")
+      .getPublicUrl(path);
+
+    newUrls.push(urlData.publicUrl);
+  }
+
+  const { error: updateError } = await supabase
+    .from("projects")
+    .update({ progress_videos: [...existingVideos, ...newUrls], updated_at: new Date().toISOString() })
+    .eq("id", project_id);
+
+  if (updateError) return { error: updateError.message };
+
+  revalidatePath(`/projects/${project_id}`);
+  return { success: true, urls: newUrls };
+}
+
+export async function deleteProgressVideoAction(formData: FormData) {
+  const supabase = await createClient();
+
+  const project_id = formData.get("project_id") as string;
+  const url = formData.get("url") as string;
+
+  if (!project_id || !url) return { error: "Missing required fields" };
+
+  const { data: project, error: fetchError } = await supabase
+    .from("projects")
+    .select("progress_videos")
+    .eq("id", project_id)
+    .single();
+
+  if (fetchError || !project) return { error: "Project not found" };
+
+  const videos: string[] = project.progress_videos || [];
+  const updated = videos.filter((v: string) => v !== url);
+
+  try {
+    const urlObj = new URL(url);
+    const pathMatch = urlObj.pathname.match(/\/object\/public\/project-documents\/(.+)$/);
+    if (pathMatch) {
+      await supabase.storage.from("project-documents").remove([pathMatch[1]]);
+    }
+  } catch {
+    // ignore storage deletion errors
+  }
+
+  const { error: updateError } = await supabase
+    .from("projects")
+    .update({ progress_videos: updated, updated_at: new Date().toISOString() })
+    .eq("id", project_id);
+
+  if (updateError) return { error: updateError.message };
+
+  revalidatePath(`/projects/${project_id}`);
+  return { success: true };
+}

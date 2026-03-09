@@ -11,6 +11,75 @@ import { formatPrice, formatArea } from "@/lib/types";
 import type { ProjectDocument, DocumentCategory } from "@/lib/data/documents";
 import type { ProjectMilestone } from "@/lib/data/milestones";
 
+/* ─── Progress Media Viewer (read-only for agents) ─── */
+function ProgressMediaSection({ pictures, videos }: { pictures: string[]; videos: string[] }) {
+  const [lightboxImg, setLightboxImg] = useState<string | null>(null);
+
+  if (pictures.length === 0 && videos.length === 0) return null;
+
+  return (
+    <>
+      <Card padding="md">
+        <h3 className="text-sm font-semibold text-secondary uppercase tracking-wider mb-4">Construction Progress</h3>
+
+        {pictures.length > 0 && (
+          <div className="mb-6">
+            <p className="text-sm font-semibold text-heading mb-3">📸 Progress Pictures</p>
+            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
+              {pictures.map((url, i) => (
+                <button
+                  key={i}
+                  onClick={() => setLightboxImg(url)}
+                  className="aspect-[4/3] rounded-[var(--radius-input)] overflow-hidden bg-bg-alt cursor-pointer hover:opacity-90 transition-opacity"
+                >
+                  <img src={url} alt={`Progress ${i + 1}`} className="w-full h-full object-cover" />
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {videos.length > 0 && (
+          <div>
+            <p className="text-sm font-semibold text-heading mb-3">🎬 Progress Videos</p>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              {videos.map((url, i) => (
+                <div key={i} className="rounded-[var(--radius-input)] overflow-hidden bg-bg-alt">
+                  <video src={url} controls preload="metadata" className="w-full aspect-video" />
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+      </Card>
+
+      {/* Lightbox */}
+      {lightboxImg && (
+        <div
+          className="fixed inset-0 z-50 bg-black/90 flex items-center justify-center p-4"
+          onClick={() => setLightboxImg(null)}
+        >
+          <button
+            onClick={() => setLightboxImg(null)}
+            className="absolute top-4 right-4 text-white/80 hover:text-white p-2 cursor-pointer"
+          >
+            <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <line x1="18" y1="6" x2="6" y2="18" />
+              <line x1="6" y1="6" x2="18" y2="18" />
+            </svg>
+          </button>
+          <img
+            src={lightboxImg}
+            alt="Progress"
+            className="max-w-full max-h-[90vh] object-contain rounded-xl"
+            onClick={(e) => e.stopPropagation()}
+          />
+        </div>
+      )}
+    </>
+  );
+}
+
 function formatFileSize(bytes: number): string {
   if (bytes < 1024) return `${bytes} B`;
   if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
@@ -149,6 +218,12 @@ export function AgentProjectDetailClient({ project, stock, milestones, documents
           )}
         </Card>
       )}
+
+      {/* Progress Media (hide if empty) */}
+      <ProgressMediaSection
+        pictures={project.progress_pictures || []}
+        videos={project.progress_videos || []}
+      />
 
       {/* Tabs */}
       <div className="border-b border-border">

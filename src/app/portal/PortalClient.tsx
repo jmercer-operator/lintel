@@ -3,7 +3,8 @@
 import { useEffect, useState } from "react";
 import { Logo } from "@/components/Logo";
 import { RoleSwitcher } from "@/components/RoleSwitcher";
-import type { Contact, StockItem, Project, Agent } from "@/lib/types";
+import { ProjectStatusBadge } from "@/components/ProjectStatusBadge";
+import type { Contact, StockItem, Project, Agent, ProjectConstructionStatus } from "@/lib/types";
 // Inline types to avoid importing server-only modules
 interface ProjectMilestone {
   id: string;
@@ -16,16 +17,6 @@ interface ProjectMilestone {
   completed_date: string | null;
   created_at: string;
   updated_at: string;
-}
-
-interface ProjectDocument {
-  id: string;
-  project_id: string;
-  file_name: string;
-  file_path: string;
-  file_size: number;
-  visibility: string;
-  created_at: string;
 }
 
 interface ClientDocument {
@@ -55,7 +46,6 @@ interface PortalClientProps {
   project: Project | null;
   agent: Agent | null;
   milestones: ProjectMilestone[];
-  projectDocuments: ProjectDocument[];
   clientDocuments: ClientDocument[];
 }
 
@@ -65,27 +55,36 @@ export default function PortalClient({
   project,
   agent,
   milestones,
-  projectDocuments,
   clientDocuments,
 }: PortalClientProps) {
   const [welcomeMsg, setWelcomeMsg] = useState("");
   const [milestoneMsg, setMilestoneMsg] = useState("");
   const [progressAnimated, setProgressAnimated] = useState(false);
   const [cardsVisible, setCardsVisible] = useState(false);
+  const [lightboxImg, setLightboxImg] = useState<string | null>(null);
 
   const displayName = contact.preferred_name || contact.first_name;
 
   const completedCount = milestones.filter((m) => m.status === "completed").length;
   const totalCount = milestones.length;
-  const progressPercent = totalCount > 0 ? Math.round((completedCount / totalCount) * 100) : 0;
   const currentMilestone = milestones.find((m) => m.status === "in_progress");
+
+  // Filter client documents to only show Exchanged Contract and Trust Receipt
+  const filteredClientDocs = clientDocuments.filter(
+    (doc) =>
+      doc.document_type === "Exchanged Contract" ||
+      doc.document_type === "Trust Receipt"
+  );
+
+  // Progress pictures & videos from project
+  const progressPictures = project?.progress_pictures ?? [];
+  const progressVideos = project?.progress_videos ?? [];
 
   useEffect(() => {
     setWelcomeMsg(getRandomMessage(welcomeMessages));
     if (currentMilestone) {
       setMilestoneMsg(getMilestoneMessage(currentMilestone.name));
     }
-    // Trigger animations
     const timer1 = setTimeout(() => setProgressAnimated(true), 300);
     const timer2 = setTimeout(() => setCardsVisible(true), 200);
     return () => {
@@ -101,6 +100,15 @@ export default function PortalClient({
   const agentInitials = agent
     ? `${agent.first_name[0]}${agent.last_name[0]}`
     : "?";
+
+  // Total m² = internal + external combined (client portal only)
+  const totalArea =
+    stock && (stock.internal_area || stock.external_area)
+      ? Math.round(Number(stock.internal_area || 0) + Number(stock.external_area || 0))
+      : null;
+
+  // Hero image: use project hero_render_url if available, otherwise emerald gradient
+  const hasHeroImage = !!project?.hero_render_url;
 
   return (
     <div className="min-h-screen bg-white">
@@ -123,35 +131,52 @@ export default function PortalClient({
         </div>
       </header>
 
-      {/* Hero Section */}
+      {/* Hero Section — project hero image or emerald fallback */}
       <div
         className="relative overflow-hidden"
         style={{
           height: "clamp(250px, 40vw, 400px)",
-          background:
-            "linear-gradient(135deg, #1E2B26 0%, #147A56 40%, #1A9E6F 70%, #1E2B26 100%)",
+          ...(hasHeroImage
+            ? {}
+            : {
+                background:
+                  "linear-gradient(135deg, #1E2B26 0%, #147A56 40%, #1A9E6F 70%, #1E2B26 100%)",
+              }),
         }}
       >
-        {/* Subtle pattern overlay */}
-        <div
-          className="absolute inset-0 opacity-10"
-          style={{
-            backgroundImage:
-              "radial-gradient(circle at 20% 50%, rgba(255,255,255,0.15) 0%, transparent 50%), radial-gradient(circle at 80% 20%, rgba(212,168,85,0.2) 0%, transparent 40%)",
-          }}
-        />
-        {/* Gradient overlay for text readability */}
+        {/* Background image */}
+        {hasHeroImage && (
+          <img
+            src={project!.hero_render_url!}
+            alt={project!.name}
+            className="absolute inset-0 w-full h-full object-cover"
+          />
+        )}
+        {/* Subtle pattern overlay (only for fallback gradient) */}
+        {!hasHeroImage && (
+          <div
+            className="absolute inset-0 opacity-10"
+            style={{
+              backgroundImage:
+                "radial-gradient(circle at 20% 50%, rgba(255,255,255,0.15) 0%, transparent 50%), radial-gradient(circle at 80% 20%, rgba(212,168,85,0.2) 0%, transparent 40%)",
+            }}
+          />
+        )}
+        {/* Dark gradient overlay for text readability */}
         <div
           className="absolute inset-0"
           style={{
             background:
-              "linear-gradient(to top, rgba(0,0,0,0.6) 0%, rgba(0,0,0,0.1) 50%, transparent 100%)",
+              "linear-gradient(to top, rgba(0,0,0,0.7) 0%, rgba(0,0,0,0.3) 50%, rgba(0,0,0,0.15) 100%)",
           }}
         />
         {/* Content */}
         <div className="relative h-full max-w-4xl mx-auto px-5 flex flex-col justify-end pb-8 sm:pb-10">
           {project && (
             <>
+              <div className="flex items-center gap-3 mb-2">
+                <ProjectStatusBadge status={project.project_status as ProjectConstructionStatus | null} />
+              </div>
               <h1
                 className="text-white font-bold tracking-tight"
                 style={{ fontSize: "clamp(28px, 5vw, 36px)" }}
@@ -183,7 +208,7 @@ export default function PortalClient({
             className="font-bold text-heading"
             style={{ fontSize: "clamp(22px, 4vw, 28px)" }}
           >
-            Welcome, {displayName} 👋
+            Congratulations, {displayName} 👋
           </h2>
           <p className="text-secondary text-base sm:text-lg mt-1">
             {welcomeMsg && project
@@ -192,7 +217,7 @@ export default function PortalClient({
           </p>
         </div>
 
-        {/* Milestone Progress */}
+        {/* Milestone Progress — no percentage display */}
         {milestones.length > 0 && (
           <div
             className={`portal-card transition-all duration-700 delay-100 ${
@@ -205,19 +230,6 @@ export default function PortalClient({
               <h3 className="text-lg sm:text-xl font-bold text-heading">
                 Construction Progress
               </h3>
-              <span className="text-2xl sm:text-3xl font-bold text-emerald-primary">
-                {progressAnimated ? progressPercent : 0}%
-              </span>
-            </div>
-
-            {/* Progress bar */}
-            <div className="w-full h-3 bg-bg-alt rounded-full overflow-hidden mb-6">
-              <div
-                className="h-full bg-emerald-primary rounded-full transition-all duration-1000 ease-out"
-                style={{
-                  width: progressAnimated ? `${progressPercent}%` : "0%",
-                }}
-              />
             </div>
 
             {/* Milestone dots */}
@@ -272,7 +284,7 @@ export default function PortalClient({
                       />
                     )}
                   </div>
-                  {/* Label — only show on larger screens or for current */}
+                  {/* Label */}
                   <span
                     className={`mt-2 text-[10px] sm:text-xs text-center leading-tight hidden sm:block ${
                       m.status === "in_progress"
@@ -303,7 +315,7 @@ export default function PortalClient({
           </div>
         )}
 
-        {/* Your Lot */}
+        {/* Your Lot — total m² combined, no separate internal/external */}
         {stock && (
           <div
             className={`portal-card transition-all duration-700 delay-200 ${
@@ -333,7 +345,7 @@ export default function PortalClient({
                   {statusMessage}
                 </p>
 
-                {/* Specs grid */}
+                {/* Specs grid — combined total m² */}
                 <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
                   <div className="p-3 bg-bg rounded-xl text-center">
                     <span className="text-lg">🛏️</span>
@@ -365,21 +377,69 @@ export default function PortalClient({
                   <div className="p-3 bg-bg rounded-xl text-center">
                     <span className="text-lg">📐</span>
                     <p className="text-sm font-bold text-heading mt-1">
-                      {stock.internal_area
-                        ? `${Math.round(Number(stock.internal_area))}m²`
-                        : "—"}
+                      {totalArea ? `${totalArea}m²` : "—"}
                     </p>
-                    <p className="text-xs text-muted">Internal</p>
+                    <p className="text-xs text-muted">Total</p>
                   </div>
                 </div>
-
-                {stock.external_area && (
-                  <p className="text-sm text-secondary">
-                    + {Math.round(Number(stock.external_area))}m² outdoor space
-                  </p>
-                )}
               </div>
             </div>
+          </div>
+        )}
+
+        {/* Construction Progress — Pictures & Videos (hide if empty) */}
+        {(progressPictures.length > 0 || progressVideos.length > 0) && (
+          <div
+            className={`portal-card transition-all duration-700 delay-250 ${
+              cardsVisible
+                ? "opacity-100 translate-y-0"
+                : "opacity-0 translate-y-4"
+            }`}
+          >
+            <h3 className="text-lg sm:text-xl font-bold text-heading mb-5">
+              Construction Progress
+            </h3>
+
+            {/* Progress Pictures */}
+            {progressPictures.length > 0 && (
+              <div className="mb-6">
+                <p className="text-sm font-semibold text-secondary mb-3">📸 Progress Pictures</p>
+                <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+                  {progressPictures.map((url, i) => (
+                    <button
+                      key={i}
+                      onClick={() => setLightboxImg(url)}
+                      className="aspect-[4/3] rounded-xl overflow-hidden bg-bg-alt cursor-pointer hover:opacity-90 transition-opacity"
+                    >
+                      <img
+                        src={url}
+                        alt={`Progress ${i + 1}`}
+                        className="w-full h-full object-cover"
+                      />
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Progress Videos */}
+            {progressVideos.length > 0 && (
+              <div>
+                <p className="text-sm font-semibold text-secondary mb-3">🎬 Progress Videos</p>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  {progressVideos.map((url, i) => (
+                    <div key={i} className="rounded-xl overflow-hidden bg-bg-alt">
+                      <video
+                        src={url}
+                        controls
+                        preload="metadata"
+                        className="w-full aspect-video"
+                      />
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
           </div>
         )}
 
@@ -396,7 +456,6 @@ export default function PortalClient({
               Your Agent
             </h3>
             <div className="flex items-start gap-4">
-              {/* Agent avatar */}
               <div className="flex-shrink-0 w-16 h-16 sm:w-20 sm:h-20 rounded-full bg-emerald-primary flex items-center justify-center text-white text-xl sm:text-2xl font-bold">
                 {agentInitials}
               </div>
@@ -412,23 +471,13 @@ export default function PortalClient({
                   with anything you need.
                 </p>
 
-                {/* Contact buttons */}
                 <div className="flex flex-wrap gap-3 mt-4">
                   {agent.phone && (
                     <a
                       href={`tel:${agent.phone}`}
                       className="inline-flex items-center gap-2 px-4 py-2.5 bg-emerald-primary text-white rounded-xl text-sm font-semibold hover:bg-emerald-dark transition-colors min-h-[44px]"
                     >
-                      <svg
-                        width="16"
-                        height="16"
-                        viewBox="0 0 24 24"
-                        fill="none"
-                        stroke="currentColor"
-                        strokeWidth="2"
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                      >
+                      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                         <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z" />
                       </svg>
                       Call
@@ -439,16 +488,7 @@ export default function PortalClient({
                       href={`mailto:${agent.email}`}
                       className="inline-flex items-center gap-2 px-4 py-2.5 bg-bg border border-border text-heading rounded-xl text-sm font-semibold hover:bg-bg-alt transition-colors min-h-[44px]"
                     >
-                      <svg
-                        width="16"
-                        height="16"
-                        viewBox="0 0 24 24"
-                        fill="none"
-                        stroke="currentColor"
-                        strokeWidth="2"
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                      >
+                      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                         <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z" />
                         <polyline points="22,6 12,13 2,6" />
                       </svg>
@@ -461,30 +501,20 @@ export default function PortalClient({
           </div>
         )}
 
-        {/* Documents */}
-        {(projectDocuments.length > 0 || clientDocuments.length > 0) && (
-          <div
-            className={`portal-card transition-all duration-700 delay-[400ms] ${
-              cardsVisible
-                ? "opacity-100 translate-y-0"
-                : "opacity-0 translate-y-4"
-            }`}
-          >
-            <h3 className="text-lg sm:text-xl font-bold text-heading mb-5">
-              Your Documents
-            </h3>
+        {/* Documents — only Exchanged Contract and Trust Receipt */}
+        <div
+          className={`portal-card transition-all duration-700 delay-[400ms] ${
+            cardsVisible
+              ? "opacity-100 translate-y-0"
+              : "opacity-0 translate-y-4"
+          }`}
+        >
+          <h3 className="text-lg sm:text-xl font-bold text-heading mb-5">
+            Your Documents
+          </h3>
+          {filteredClientDocs.length > 0 ? (
             <div className="space-y-3">
-              {projectDocuments.map((doc) => (
-                <DocumentCard
-                  key={doc.id}
-                  name={doc.file_name}
-                  size={doc.file_size}
-                  date={doc.created_at}
-                  type="project"
-                  filePath={doc.file_path}
-                />
-              ))}
-              {clientDocuments.map((doc) => (
+              {filteredClientDocs.map((doc) => (
                 <DocumentCard
                   key={doc.id}
                   name={doc.file_name}
@@ -495,36 +525,40 @@ export default function PortalClient({
                 />
               ))}
             </div>
-            {projectDocuments.length === 0 && clientDocuments.length === 0 && (
-              <p className="text-sm text-muted text-center py-4">
+          ) : (
+            <div className="text-center py-4">
+              <span className="text-4xl">📄</span>
+              <p className="text-sm text-secondary mt-3">
                 No documents available yet.
               </p>
-            )}
-          </div>
-        )}
-
-        {/* No documents placeholder */}
-        {projectDocuments.length === 0 && clientDocuments.length === 0 && (
-          <div
-            className={`portal-card text-center transition-all duration-700 delay-[400ms] ${
-              cardsVisible
-                ? "opacity-100 translate-y-0"
-                : "opacity-0 translate-y-4"
-            }`}
-          >
-            <div className="py-4">
-              <span className="text-4xl">📄</span>
-              <h3 className="text-lg font-bold text-heading mt-3">
-                Documents
-              </h3>
-              <p className="text-sm text-secondary mt-1">
-                Your project documents will appear here as they become
-                available.
-              </p>
             </div>
-          </div>
-        )}
+          )}
+        </div>
       </div>
+
+      {/* Lightbox for progress pictures */}
+      {lightboxImg && (
+        <div
+          className="fixed inset-0 z-50 bg-black/90 flex items-center justify-center p-4"
+          onClick={() => setLightboxImg(null)}
+        >
+          <button
+            onClick={() => setLightboxImg(null)}
+            className="absolute top-4 right-4 text-white/80 hover:text-white p-2 cursor-pointer"
+          >
+            <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <line x1="18" y1="6" x2="6" y2="18" />
+              <line x1="6" y1="6" x2="18" y2="18" />
+            </svg>
+          </button>
+          <img
+            src={lightboxImg}
+            alt="Progress"
+            className="max-w-full max-h-[90vh] object-contain rounded-xl"
+            onClick={(e) => e.stopPropagation()}
+          />
+        </div>
+      )}
 
       {/* Footer */}
       <footer className="border-t border-border/50 mt-12">
@@ -576,9 +610,8 @@ function DocumentCard({
   async function handleDownload() {
     setDownloading(true);
     try {
-      const bucket = type === "project" ? "project-documents" : "client-documents";
       const res = await fetch(
-        `/api/portal/download?bucket=${encodeURIComponent(bucket)}&path=${encodeURIComponent(filePath)}`
+        `/api/portal/download?bucket=client-documents&path=${encodeURIComponent(filePath)}`
       );
       if (!res.ok) throw new Error("Download failed");
       const { url } = await res.json();
@@ -596,7 +629,6 @@ function DocumentCard({
     year: "numeric",
   });
 
-  // File type icon
   const ext = name.split(".").pop()?.toLowerCase();
   const icon =
     ext === "pdf"
@@ -616,9 +648,7 @@ function DocumentCard({
         <p className="text-sm font-medium text-heading truncate">{name}</p>
         <p className="text-xs text-muted">
           {formatFileSize(size)} · {formattedDate}
-          {type !== "project" && (
-            <span className="ml-1 text-emerald-primary">· {type}</span>
-          )}
+          <span className="ml-1 text-emerald-primary">· {type}</span>
         </p>
       </div>
       <button
@@ -627,32 +657,11 @@ function DocumentCard({
         className="flex-shrink-0 p-2 rounded-xl hover:bg-emerald-primary/10 text-emerald-primary transition-colors cursor-pointer min-h-[44px] min-w-[44px] flex items-center justify-center disabled:opacity-50"
       >
         {downloading ? (
-          <svg
-            className="w-5 h-5 animate-spin"
-            viewBox="0 0 24 24"
-            fill="none"
-          >
-            <circle
-              cx="12"
-              cy="12"
-              r="10"
-              stroke="currentColor"
-              strokeWidth="2"
-              strokeDasharray="32"
-              strokeLinecap="round"
-            />
+          <svg className="w-5 h-5 animate-spin" viewBox="0 0 24 24" fill="none">
+            <circle cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="2" strokeDasharray="32" strokeLinecap="round" />
           </svg>
         ) : (
-          <svg
-            width="18"
-            height="18"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            strokeWidth="2"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-          >
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
             <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
             <polyline points="7 10 12 15 17 10" />
             <line x1="12" y1="15" x2="12" y2="3" />

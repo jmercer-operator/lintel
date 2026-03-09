@@ -30,7 +30,7 @@ export default async function ProjectDetailPage({ params, searchParams }: PagePr
 
   if (!project) notFound();
 
-  const activeTab = (tab === "documents" || tab === "milestones") ? tab : "stock";
+  const activeTab = (tab === "documents" || tab === "milestones" || tab === "progress") ? tab : "stock";
   const statusFilter = status || "All";
   const stock = await getStock(id, statusFilter);
 

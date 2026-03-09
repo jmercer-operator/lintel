@@ -972,3 +972,22 @@ Currently when agent tries to change status from Available, it just blocks with 
 - Build passes with zero errors
 - Commit message: "checkpoint 10: client portal + progress media"
 - Push to main
+
+## Checkpoint 10b — Dashboard Stock Grouping (CURRENT — do after CP10)
+
+### Dashboard stock table — group by project with collapsible rows:
+- On the staff dashboard where all stock is listed, group lots under project names
+- Each project appears as a header row with: project logo, project name, lot count, status summary (e.g. "3 Available, 2 EOI, 1 Under Contract")
+- Lots are HIDDEN by default under each project group
+- Click the arrow/chevron on the project header row to expand and show all lots for that project
+- Click again to collapse
+- The expand/collapse arrow should be on the left of the project name row
+- When expanded, show the full stock table rows (Lot | Bed | Bath | Car | m² Int | m² Ext | Price | Status | Agent | Commission | Updated)
+- Multiple projects can be expanded at the same time
+- Filters (project, status, agent) still work — they filter which project groups and lots appear
+- This applies to the DASHBOARD stock table, not the /stock page (the /stock page keeps its flat table with filters)
+
+### IMPORTANT:
+- Build passes with zero errors
+- Commit as part of checkpoint 10 OR as separate commit "checkpoint 10b: dashboard stock grouping"
+- Push to main

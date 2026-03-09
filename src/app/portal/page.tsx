@@ -66,7 +66,7 @@ export default async function PortalPage() {
       }
     }
 
-    // 5. Get project
+    // 5. Get project (including progress_pictures, progress_videos)
     const { data: projectData } = await supabase
       .from("projects")
       .select("*")
@@ -82,15 +82,7 @@ export default async function PortalPage() {
     ? await getProjectMilestones(projectId)
     : [];
 
-  // 7. Get project documents with visibility='client'
-  const { data: projectDocuments } = await supabase
-    .from("project_documents")
-    .select("*")
-    .eq("project_id", projectId || "")
-    .eq("visibility", "client")
-    .order("created_at", { ascending: false });
-
-  // 8. Get client documents
+  // 7. Get client documents (only Exchanged Contract and Trust Receipt filtered client-side)
   const { data: clientDocuments } = await supabase
     .from("client_documents")
     .select("*")
@@ -104,7 +96,6 @@ export default async function PortalPage() {
       project={project}
       agent={agent}
       milestones={milestones}
-      projectDocuments={projectDocuments || []}
       clientDocuments={clientDocuments || []}
     />
   );

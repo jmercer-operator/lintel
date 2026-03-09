@@ -16,10 +16,11 @@ import { ProjectLogo } from "@/components/ProjectLogo";
 import { ReserveLotModal } from "@/components/ReserveLotModal";
 import { ProjectStatusBadge } from "@/components/ProjectStatusBadge";
 import { NewProjectForm } from "@/components/NewProjectForm";
+import { ProgressMediaTab } from "@/components/ProgressMediaTab";
 import { ALL_STATUSES, formatPrice, formatArea, timeAgo } from "@/lib/types";
 import type { ProjectWithStats, StockItem, StockStatus, Agent, ContactWithLinkedStock, ProjectConstructionStatus } from "@/lib/types";
 
-type TabKey = "stock" | "documents" | "milestones";
+type TabKey = "stock" | "documents" | "milestones" | "progress";
 
 interface ProjectDetailClientProps {
   project: ProjectWithStats;
@@ -47,6 +48,7 @@ const tabs: { key: TabKey; label: string }[] = [
   { key: "stock", label: "Stock" },
   { key: "documents", label: "Documents" },
   { key: "milestones", label: "Milestones" },
+  { key: "progress", label: "Progress Media" },
 ];
 
 export function ProjectDetailClient({
@@ -230,6 +232,14 @@ export function ProjectDetailClient({
         <MilestonesTab
           projectId={project.id}
           milestones={milestones}
+        />
+      )}
+
+      {activeTab === "progress" && (
+        <ProgressMediaTab
+          projectId={project.id}
+          pictures={project.progress_pictures || []}
+          videos={project.progress_videos || []}
         />
       )}
 
