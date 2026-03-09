@@ -74,9 +74,9 @@ export function TopBar({ avatarName = "AM" }: TopBarProps) {
         <RoleSwitcher />
 
         {/* User avatar — click goes to profile */}
-        <button onClick={handleAvatarClick} className="cursor-pointer">
+        <a href={(() => { const r = getCurrentUserRole(); return r === 'agent' ? '/agent/profile' : r === 'client' ? '/portal/profile' : '/profile'; })()} className="cursor-pointer">
           <Avatar name={avatarName} size="sm" />
-        </button>
+        </a>
       </div>
     </header>
   );
