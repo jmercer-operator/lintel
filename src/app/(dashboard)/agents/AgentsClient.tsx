@@ -16,7 +16,7 @@ interface Props {
 export function AgentsClient({ agents, projects }: Props) {
   const router = useRouter();
   const [showAddModal, setShowAddModal] = useState(false);
-  const [viewMode, setViewMode] = useState<"grid" | "list">("grid");
+  const viewMode = "list" as const;
 
   return (
     <div className="p-6 md:p-8">
@@ -28,29 +28,10 @@ export function AgentsClient({ agents, projects }: Props) {
             {agents.length} agent{agents.length !== 1 ? "s" : ""} — {agents.filter((a) => a.status === "active").length} active
           </p>
         </div>
-        <div className="flex items-center gap-3">
-          {/* View toggle */}
-          <div className="flex items-center bg-bg-alt rounded-lg p-0.5 border border-border">
-            <button
-              onClick={() => setViewMode("grid")}
-              className={`p-1.5 rounded-md transition-all cursor-pointer ${viewMode === "grid" ? "bg-white shadow-sm text-heading" : "text-muted hover:text-secondary"}`}
-              title="Grid view"
-            >
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><rect x="3" y="3" width="7" height="7" rx="1" /><rect x="14" y="3" width="7" height="7" rx="1" /><rect x="3" y="14" width="7" height="7" rx="1" /><rect x="14" y="14" width="7" height="7" rx="1" /></svg>
-            </button>
-            <button
-              onClick={() => setViewMode("list")}
-              className={`p-1.5 rounded-md transition-all cursor-pointer ${viewMode === "list" ? "bg-white shadow-sm text-heading" : "text-muted hover:text-secondary"}`}
-              title="List view"
-            >
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><line x1="8" y1="6" x2="21" y2="6" /><line x1="8" y1="12" x2="21" y2="12" /><line x1="8" y1="18" x2="21" y2="18" /><line x1="3" y1="6" x2="3.01" y2="6" /><line x1="3" y1="12" x2="3.01" y2="12" /><line x1="3" y1="18" x2="3.01" y2="18" /></svg>
-            </button>
-          </div>
-          <Button onClick={() => setShowAddModal(true)}>
-            <PlusIcon />
-            Add Agent
-          </Button>
-        </div>
+        <Button onClick={() => setShowAddModal(true)}>
+          <PlusIcon />
+          Add Agent
+        </Button>
       </div>
 
       {/* List View */}
@@ -100,8 +81,8 @@ export function AgentsClient({ agents, projects }: Props) {
         </div>
       )}
 
-      {/* Grid View */}
-      {viewMode === "grid" && <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-5">
+      {/* Grid View — removed */}
+      {false && <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-5">
         {agents.map((agent) => (
           <div
             key={agent.id}
