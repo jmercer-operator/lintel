@@ -15,7 +15,16 @@ import { ClientDocuments } from "@/components/ClientDocuments";
 import { ActivityTimeline } from "@/components/ActivityTimeline";
 import { ContactFollowUps } from "@/components/ContactFollowUps";
 import { BuyerInterests } from "@/components/BuyerInterests";
+import { CommunicationPanel } from "@/components/CommunicationPanel";
 import type { ClientDocument } from "@/components/ClientDocuments";
+import type { EmailTemplate, DocumentShare } from "@/lib/types";
+
+interface ProjectDocRecord {
+  id: string;
+  file_name: string;
+  file_path: string;
+  category_name?: string;
+}
 
 interface Props {
   contact: ContactWithLinkedStock;
@@ -25,9 +34,12 @@ interface Props {
   followUps: FollowUp[];
   buyerInterests: BuyerInterest[];
   projects: Project[];
+  emailTemplates?: EmailTemplate[];
+  projectDocuments?: ProjectDocRecord[];
+  documentShares?: DocumentShare[];
 }
 
-export function ContactDetailClient({ contact, agents, clientDocuments, activities, followUps, buyerInterests, projects }: Props) {
+export function ContactDetailClient({ contact, agents, clientDocuments, activities, followUps, buyerInterests, projects, emailTemplates = [], projectDocuments = [], documentShares = [] }: Props) {
   const router = useRouter();
   const [showEditModal, setShowEditModal] = useState(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
@@ -61,6 +73,21 @@ export function ContactDetailClient({ contact, agents, clientDocuments, activiti
             Delete
           </Button>
       </div>
+
+      {/* Communication Panel */}
+      <CommunicationPanel
+        contact={contact}
+        templates={emailTemplates}
+        projectDocuments={projectDocuments}
+        clientDocuments={clientDocuments.map((d) => ({
+          id: d.id,
+          file_name: d.file_name,
+          file_path: d.file_path,
+          document_type: d.document_type,
+        }))}
+        documentShares={documentShares}
+        agentName={referringAgent ? `${referringAgent.first_name} ${referringAgent.last_name}` : undefined}
+      />
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Left column - Details */}

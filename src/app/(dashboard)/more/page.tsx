@@ -4,6 +4,7 @@ const menuItems = [
   { label: "Customers", href: "/contacts", icon: "👥", desc: "Manage customers" },
   { label: "Documents", href: "/documents", icon: "📄", desc: "Project documents" },
   { label: "Reports", href: "/reports", icon: "📈", desc: "Reports & analytics" },
+  { label: "Email Templates", href: "/more/templates", icon: "✉️", desc: "Manage email templates" },
   { label: "Registrations", href: "/registrations", icon: "📋", desc: "Agent registrations" },
 ];
 

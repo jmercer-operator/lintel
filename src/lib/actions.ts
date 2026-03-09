@@ -1224,6 +1224,152 @@ export async function removeBuyerInterestAction(formData: FormData) {
   return { success: true };
 }
 
+/* ─── Phase 3: Communication & Document Sharing Actions ─── */
+
+export async function shareDocumentAction(formData: FormData) {
+  const supabase = await createClient();
+
+  const document_type = formData.get("document_type") as string;
+  const document_id = formData.get("document_id") as string;
+  const shared_with_ids = formData.getAll("shared_with_ids") as string[];
+  const shared_with_type = formData.get("shared_with_type") as string;
+  const delivery_method = (formData.get("delivery_method") as string) || "portal";
+  const shared_by = (formData.get("shared_by") as string) || null;
+
+  if (!document_type || !document_id || shared_with_ids.length === 0 || !shared_with_type) {
+    return { error: "Document, recipients, and type are required" };
+  }
+
+  for (const recipientId of shared_with_ids) {
+    const { error } = await supabase.from("document_shares").insert({
+      org_id: DEFAULT_ORG_ID,
+      document_type,
+      document_id,
+      shared_with_id: recipientId,
+      shared_with_type,
+      shared_by,
+      delivery_method,
+    });
+    if (error) return { error: error.message };
+  }
+
+  // Create notification for portal shares
+  if (delivery_method === "portal") {
+    for (const recipientId of shared_with_ids) {
+      try {
+        await supabase.from("notifications").insert({
+          org_id: DEFAULT_ORG_ID,
+          type: "document_shared",
+          title: "Document Shared",
+          message: "A new document has been shared with you",
+          metadata: { document_id, document_type, recipient_id: recipientId },
+        });
+      } catch {
+        // notifications table may not exist yet
+      }
+    }
+  }
+
+  revalidatePath("/");
+  return { success: true };
+}
+
+export async function logCommunicationAction(formData: FormData) {
+  const supabase = await createClient();
+
+  const contact_id = formData.get("contact_id") as string;
+  const comm_type = formData.get("comm_type") as string; // 'call' | 'email'
+  const subject = (formData.get("subject") as string) || null;
+  const body = (formData.get("body") as string) || null;
+
+  if (!contact_id || !comm_type) {
+    return { error: "Contact and communication type are required" };
+  }
+
+  const title = comm_type === "call" ? "Call initiated" : `Email: ${subject || "No subject"}`;
+  const description = comm_type === "email" && body ? body.substring(0, 500) : null;
+
+  const { error } = await supabase.from("activities").insert({
+    contact_id,
+    type: comm_type,
+    title,
+    description,
+    metadata: { comm_type, subject },
+  });
+
+  if (error) return { error: error.message };
+
+  revalidatePath(`/contacts/${contact_id}`);
+  return { success: true };
+}
+
+export async function createEmailTemplateAction(formData: FormData) {
+  const supabase = await createClient();
+
+  const name = formData.get("name") as string;
+  const subject = formData.get("subject") as string;
+  const body = formData.get("body") as string;
+  const category = formData.get("category") as string;
+
+  if (!name || !subject || !body || !category) {
+    return { error: "All fields are required" };
+  }
+
+  const { error } = await supabase.from("email_templates").insert({
+    org_id: DEFAULT_ORG_ID,
+    name,
+    subject,
+    body,
+    category,
+  });
+
+  if (error) return { error: error.message };
+
+  revalidatePath("/more/templates");
+  return { success: true };
+}
+
+export async function updateEmailTemplateAction(formData: FormData) {
+  const supabase = await createClient();
+
+  const id = formData.get("id") as string;
+  const name = formData.get("name") as string;
+  const subject = formData.get("subject") as string;
+  const body = formData.get("body") as string;
+  const category = formData.get("category") as string;
+
+  if (!id || !name || !subject || !body || !category) {
+    return { error: "All fields are required" };
+  }
+
+  const { error } = await supabase
+    .from("email_templates")
+    .update({ name, subject, body, category, updated_at: new Date().toISOString() })
+    .eq("id", id);
+
+  if (error) return { error: error.message };
+
+  revalidatePath("/more/templates");
+  return { success: true };
+}
+
+export async function deleteEmailTemplateAction(formData: FormData) {
+  const supabase = await createClient();
+
+  const id = formData.get("id") as string;
+  if (!id) return { error: "Template ID is required" };
+
+  const { error } = await supabase
+    .from("email_templates")
+    .delete()
+    .eq("id", id);
+
+  if (error) return { error: error.message };
+
+  revalidatePath("/more/templates");
+  return { success: true };
+}
+
 export async function updatePipelineStageAction(formData: FormData) {
   const supabase = await createClient();
 

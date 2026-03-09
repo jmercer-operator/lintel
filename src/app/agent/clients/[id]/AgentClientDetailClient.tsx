@@ -12,17 +12,29 @@ import { BuyerTypeBadge, FirbBadge } from "@/components/BuyerTypeBadge";
 import { ContactForm } from "@/components/ContactForm";
 import { Avatar } from "@/components/Avatar";
 import { ClientDocuments } from "@/components/ClientDocuments";
+import { CommunicationPanel } from "@/components/CommunicationPanel";
 import type { ClientDocument } from "@/components/ClientDocuments";
-import type { ContactWithLinkedStock, Agent, StockStatus, BuyerType } from "@/lib/types";
+import type { ContactWithLinkedStock, Agent, StockStatus, BuyerType, EmailTemplate, DocumentShare } from "@/lib/types";
+
+interface ProjectDocRecord {
+  id: string;
+  file_name: string;
+  file_path: string;
+  category_name?: string;
+}
 
 interface Props {
   contact: ContactWithLinkedStock;
   agents: Agent[];
   clientDocuments: ClientDocument[];
   agentId: string;
+  emailTemplates?: EmailTemplate[];
+  projectDocuments?: ProjectDocRecord[];
+  documentShares?: DocumentShare[];
+  agentName?: string;
 }
 
-export function AgentClientDetailClient({ contact, agents, clientDocuments, agentId }: Props) {
+export function AgentClientDetailClient({ contact, agents, clientDocuments, agentId, emailTemplates = [], projectDocuments = [], documentShares = [], agentName }: Props) {
   const router = useRouter();
   const [showEditModal, setShowEditModal] = useState(false);
 
@@ -61,6 +73,21 @@ export function AgentClientDetailClient({ contact, agents, clientDocuments, agen
         </div>
         <Button onClick={() => setShowEditModal(true)}>Edit Contact</Button>
       </div>
+
+      {/* Communication Panel */}
+      <CommunicationPanel
+        contact={contact}
+        templates={emailTemplates}
+        projectDocuments={projectDocuments}
+        clientDocuments={clientDocuments.map((d) => ({
+          id: d.id,
+          file_name: d.file_name,
+          file_path: d.file_path,
+          document_type: d.document_type,
+        }))}
+        documentShares={documentShares}
+        agentName={agentName}
+      />
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Left column */}

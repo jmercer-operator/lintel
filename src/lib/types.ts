@@ -502,3 +502,42 @@ export interface PipelineContact {
   created_at: string;
   updated_at: string;
 }
+
+/* ─── Phase 3: Communication & Document Sharing Types ─── */
+
+export type DocumentShareType = 'project_document' | 'client_document';
+export type DeliveryMethod = 'email' | 'portal' | 'link';
+export type EmailTemplateCategory = 'welcome' | 'follow_up' | 'document' | 'inspection' | 'contract' | 'settlement' | 'marketing' | 'custom';
+
+export const EMAIL_TEMPLATE_CATEGORY_LABELS: Record<EmailTemplateCategory, string> = {
+  welcome: 'Welcome',
+  follow_up: 'Follow Up',
+  document: 'Document',
+  inspection: 'Inspection',
+  contract: 'Contract',
+  settlement: 'Settlement',
+  marketing: 'Marketing',
+  custom: 'Custom',
+};
+
+export interface DocumentShare {
+  id: string;
+  document_type: DocumentShareType;
+  document_id: string;
+  shared_with_id: string;
+  shared_with_type: 'contact' | 'agent';
+  shared_by: string | null;
+  delivery_method: DeliveryMethod;
+  viewed_at: string | null;
+  created_at: string;
+}
+
+export interface EmailTemplate {
+  id: string;
+  name: string;
+  subject: string;
+  body: string;
+  category: EmailTemplateCategory;
+  created_at: string;
+  updated_at: string;
+}

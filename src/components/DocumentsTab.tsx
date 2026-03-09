@@ -9,6 +9,7 @@ import { VISIBILITY_LABELS, VISIBILITY_COLORS } from "@/lib/types";
 import { getCurrentUserRole, canUploadDocument, canDeleteDocument } from "@/lib/auth/roles";
 import type { DocumentVisibility } from "@/lib/types";
 import { createClient } from "@/lib/supabase/client";
+import { ShareDocumentModal } from "@/components/ShareDocumentModal";
 
 export interface DocumentCategory {
   id: string;
@@ -72,6 +73,7 @@ export function DocumentsTab({ projectId, categories, documents, clientDocuments
   const [deleting, setDeleting] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const fileInputRefs = useRef<Record<string, HTMLInputElement | null>>({});
+  const [sharingDoc, setSharingDoc] = useState<ProjectDocument | null>(null);
 
   const docsByCategory = categories.map((cat) => ({
     category: cat,
@@ -294,6 +296,13 @@ export function DocumentsTab({ projectId, categories, documents, clientDocuments
                     </span>
                     <div className="flex items-center gap-1">
                       <button
+                        onClick={() => setSharingDoc(doc)}
+                        className="p-1.5 rounded-[var(--radius-input)] hover:bg-[#1A9E6F]/10 transition-colors text-secondary hover:text-[#1A9E6F] cursor-pointer"
+                        title="Share"
+                      >
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/></svg>
+                      </button>
+                      <button
                         onClick={() => handleDownload(doc)}
                         className="p-1.5 rounded-[var(--radius-input)] hover:bg-bg-alt transition-colors text-secondary hover:text-heading cursor-pointer"
                         title="Download"
@@ -372,6 +381,18 @@ export function DocumentsTab({ projectId, categories, documents, clientDocuments
             <p className="text-secondary text-sm">No document categories configured</p>
           </div>
         </Card>
+      )}
+
+      {/* Share Document Modal */}
+      {sharingDoc && (
+        <ShareDocumentModal
+          open={!!sharingDoc}
+          onClose={() => setSharingDoc(null)}
+          documentId={sharingDoc.id}
+          documentType="project_document"
+          documentName={sharingDoc.file_name}
+          projectId={projectId}
+        />
       )}
     </div>
   );
