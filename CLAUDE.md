@@ -786,3 +786,48 @@ This is the FUN portal. Clients (buyers) see a completely different experience �
 - Build passes with zero errors
 - Commit message: "checkpoint 7: agent portal fixes + commission"
 - Push to main
+
+## Checkpoint 8 — Agent Lot Linking + Client Detail (CURRENT)
+
+### 2 Changes
+
+**1. Agent lot status change → customer linking flow:**
+Currently when agent tries to change status from Available, it just blocks with a message. Instead:
+
+- When agent tries to change a lot from "Available" to any other status, show a modal with:
+  - Title: "Link Customer to Lot {lot_number}"
+  - Two options as buttons/cards:
+    A) **"Add New Customer"** → Opens the ContactForm (add client form) with the lot pre-linked. After saving the new contact, auto-creates contact_stock link AND changes lot status to EOI. Redirect back to lots page.
+    B) **"Link Existing Customer"** → Shows a searchable list of the agent's existing contacts (from contacts table where referring_agent_id = this agent). Each contact has a checkbox. ALLOW MULTIPLE SELECTION (multiple buyers can purchase same property — co-buyers/investors). After selecting and clicking "Save", creates contact_stock links for all selected contacts AND changes lot status to EOI.
+  - Cancel button to go back without changes
+
+- The flow: Agent changes dropdown → modal appears → agent picks option → action completes → lot status updates
+
+- This should be in src/app/agent/ — update the lots page and the API route
+- The ReserveLotModal component from staff view can be adapted but needs the multi-select customer list
+
+**2. Agent clients tab → full client detail page:**
+
+- Clicking a contact card on /agent/clients should navigate to /agent/clients/[id]
+- Create /agent/clients/[id]/page.tsx — agent client detail page:
+  - Full contact profile (same layout as staff contact detail but in agent layout)
+  - Personal details, phone, email, address
+  - Buyer type badge, classification badge
+  - FIRB status
+  - Edit button → opens form (agent can edit contact details)
+  - **"Purchased Properties" section**: If contact is linked to any stock (via contact_stock), show a section listing:
+    - Each linked lot as a card: Project name (with logo), Lot number, Bedrooms/Bathrooms/Car, Status badge, Level
+    - Click lot card → navigates to that project in agent view
+  - If no linked properties, show empty state: "No properties linked yet"
+  - Agent's own documents for this client (client_documents)
+  - Upload client document button
+
+### IMPORTANT:
+- contact_stock table supports multiple contacts per stock item (UNIQUE on contact_id + stock_id, not on stock_id alone)
+- When linking, create one contact_stock row per selected contact, all for the same stock_id
+- Role defaults for contact_stock: first selected = 'buyer', additional = 'co_buyer'
+- Agent can only see/link their own clients (referring_agent_id = agent's id)
+- Keep all existing agent pages working
+- Build passes with zero errors
+- Commit message: "checkpoint 8: agent lot linking + client detail"
+- Push to main
