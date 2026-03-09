@@ -895,3 +895,80 @@ Currently when agent tries to change status from Available, it just blocks with 
 - Build passes with zero errors
 - Commit message: "checkpoint 9: stock page + project fields + commission refactor"
 - Push to main
+
+## Checkpoint 10 — Client Portal + Progress Media (CURRENT)
+
+### Database — ALREADY UPDATED (do NOT run SQL again)
+- projects: added progress_pictures TEXT[], progress_videos TEXT[]
+- document_categories: added 'Exchanged Contract', 'Trust Receipt', 'Progress Pictures', 'Progress Videos'
+
+### CLIENT PORTAL CHANGES (src/app/portal/):
+
+**1. Remove percentage from client portal**
+- Whatever percentage display exists (deposit %, completion %, etc.) — remove it from the client view
+
+**2. Project status — show what staff shows**
+- Client portal should display the project_status from the projects table (Pre-Construction / Under Construction / Complete)
+- Use the same ProjectStatusBadge component from staff view
+- Show it prominently on the portal hero section
+
+**3. Change "Your locked in" → "Congratulations"**
+- Find the text "You're locked in" or similar celebratory message on the client portal
+- Replace with "Congratulations"
+
+**4. Hero image instead of green background**
+- The top of the client portal currently has a green/emerald background
+- Replace it with the project's hero_render_url as a background image
+- Add a dark gradient overlay so white text remains readable
+- If no hero_render_url exists, fall back to the emerald background
+- Make it full-width, ~300-400px tall, with the congratulations text, project name, lot info overlaid
+
+**5. Total m² = internal + external combined**
+- Don't show separate "Internal m²" and "External m²" on the client portal
+- Show a single "Total m²" value that is internal_area + external_area
+- Keep them separate on staff/agent views (only client portal combines them)
+
+**6. Client documents — only show Exchanged Contract and Trust Receipt**
+- On the client portal documents section, ONLY show documents categorised as:
+  a) Exchanged Contract
+  b) Trust Receipt
+- These come from client_documents that have been uploaded by staff
+- Client can view and download them
+- No other document types visible to client
+- Show "No documents available yet" if none uploaded
+
+### STAFF PAGE CHANGES:
+
+**7. Progress Pictures upload on project detail**
+- Under the project Documents tab (or a new "Progress" tab), add:
+  - "Progress Pictures" section: multiple image upload, shows as thumbnail grid
+  - Upload to Supabase Storage under project-documents/{org_id}/progress/{project_id}/pictures/
+  - Store URLs in projects.progress_pictures array
+  - Allow adding more over time (append, not replace)
+  - Delete individual pictures (remove from array + storage)
+
+**8. Progress Videos upload on project detail**
+- "Progress Videos" section: multiple video upload
+- Upload to Supabase Storage under project-documents/{org_id}/progress/{project_id}/videos/
+- Store URLs in projects.progress_videos array
+- Show as video thumbnails/cards with play icon
+- Accept mp4, mov, webm
+
+### AGENT PORTAL + CLIENT PORTAL:
+
+**9. Show progress media (conditionally)**
+- Agent project detail (/agent/projects/[id]): show Progress Pictures and Progress Videos sections
+- Client portal: show a "Construction Progress" section with pictures and videos
+- **HIDE the sections completely if no pictures/videos exist** (empty arrays)
+- Pictures: image gallery with lightbox/modal on click
+- Videos: video player cards
+
+### IMPORTANT:
+- Client portal files: src/app/portal/
+- The portal currently has a PortalClient component — update it
+- Portal messages in src/lib/portal-messages.ts — check for "locked in" text there
+- Storage bucket project-documents is already public
+- Progress media should be sorted by upload date (newest first)
+- Build passes with zero errors
+- Commit message: "checkpoint 10: client portal + progress media"
+- Push to main
