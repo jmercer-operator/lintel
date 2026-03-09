@@ -78,6 +78,8 @@ export interface StockItem {
   notes: string | null;
   commission_rate: number | null;
   commission_type: CommissionType | null;
+  deposit_amount: number | null;
+  deposit_paid: boolean;
   created_at: string;
   updated_at: string;
 }

@@ -317,7 +317,7 @@ export default function PortalClient({
           </div>
         )}
 
-        {/* Your Lot — total m² combined, no separate internal/external */}
+        {/* Your Home — redesigned with price, deposit, premium layout */}
         {stock && (
           <div
             className={`portal-card transition-all duration-700 delay-200 ${
@@ -326,64 +326,73 @@ export default function PortalClient({
                 : "opacity-0 translate-y-4"
             }`}
           >
-            <h3 className="text-lg sm:text-xl font-bold text-heading mb-5">
+            <h3 className="text-lg sm:text-xl font-bold text-heading mb-6">
               Your Home
             </h3>
-            <div className="flex flex-col sm:flex-row sm:items-start gap-5">
-              {/* Lot number badge */}
-              <div className="flex-shrink-0 w-20 h-20 sm:w-24 sm:h-24 rounded-2xl bg-emerald-primary/10 flex flex-col items-center justify-center">
-                <span className="text-xs text-emerald-primary font-medium uppercase tracking-wider">
-                  Lot
-                </span>
-                <span className="text-2xl sm:text-3xl font-bold text-emerald-primary font-mono">
-                  {stock.lot_number}
-                </span>
-              </div>
 
-              {/* Details */}
-              <div className="flex-1 space-y-4">
-                {/* Status message */}
-                <p className="text-base sm:text-lg font-medium text-heading">
-                  {statusMessage}
-                </p>
-
-                {/* Specs grid — combined total m² */}
-                <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-                  <div className="p-3 bg-bg rounded-xl text-center">
-                    <span className="text-lg">🛏️</span>
-                    <p className="text-sm font-bold text-heading mt-1">
-                      {stock.bedrooms}
-                    </p>
-                    <p className="text-xs text-muted">
-                      Bed{stock.bedrooms !== 1 ? "s" : ""}
-                    </p>
-                  </div>
-                  <div className="p-3 bg-bg rounded-xl text-center">
-                    <span className="text-lg">🚿</span>
-                    <p className="text-sm font-bold text-heading mt-1">
-                      {stock.bathrooms}
-                    </p>
-                    <p className="text-xs text-muted">
-                      Bath{stock.bathrooms !== 1 ? "s" : ""}
-                    </p>
-                  </div>
-                  <div className="p-3 bg-bg rounded-xl text-center">
-                    <span className="text-lg">🚗</span>
-                    <p className="text-sm font-bold text-heading mt-1">
-                      {stock.car_spaces}
-                    </p>
-                    <p className="text-xs text-muted">
-                      Car{stock.car_spaces !== 1 ? "s" : ""}
-                    </p>
-                  </div>
-                  <div className="p-3 bg-bg rounded-xl text-center">
-                    <span className="text-lg">📐</span>
-                    <p className="text-sm font-bold text-heading mt-1">
-                      {totalArea ? `${totalArea}m²` : "—"}
-                    </p>
-                    <p className="text-xs text-muted">Total</p>
-                  </div>
+            {/* Top: Lot badge + status + price */}
+            <div className="flex items-start justify-between mb-6">
+              <div className="flex items-center gap-4">
+                <div className="w-16 h-16 sm:w-20 sm:h-20 rounded-2xl bg-emerald-primary/10 flex flex-col items-center justify-center">
+                  <span className="text-[10px] text-emerald-primary font-medium uppercase tracking-wider">
+                    Lot
+                  </span>
+                  <span className="text-xl sm:text-2xl font-bold text-emerald-primary font-mono">
+                    {stock.lot_number}
+                  </span>
                 </div>
+                <div>
+                  <p className="text-base sm:text-lg font-semibold text-heading">
+                    {statusMessage}
+                  </p>
+                  {project && (
+                    <p className="text-sm text-secondary mt-0.5">{project.name}</p>
+                  )}
+                </div>
+              </div>
+            </div>
+
+            {/* Price & Deposit row */}
+            <div className="grid grid-cols-2 gap-4 mb-6">
+              <div className="p-4 bg-emerald-primary/5 rounded-2xl border border-emerald-primary/10">
+                <p className="text-xs text-secondary font-medium uppercase tracking-wider mb-1">Purchase Price</p>
+                <p className="text-xl sm:text-2xl font-bold text-heading">
+                  {stock.price ? `$${Math.round(stock.price).toLocaleString("en-AU")}` : "—"}
+                </p>
+              </div>
+              <div className={`p-4 rounded-2xl border ${stock.deposit_paid ? 'bg-emerald-primary/5 border-emerald-primary/10' : 'bg-amber-50 border-amber-200'}`}>
+                <p className="text-xs text-secondary font-medium uppercase tracking-wider mb-1">Deposit</p>
+                <p className="text-xl sm:text-2xl font-bold text-heading">
+                  {stock.deposit_amount ? `$${Math.round(Number(stock.deposit_amount)).toLocaleString("en-AU")}` : "—"}
+                </p>
+                {stock.deposit_paid ? (
+                  <span className="inline-flex items-center gap-1 text-xs font-semibold text-emerald-primary mt-1">
+                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12" /></svg>
+                    Paid
+                  </span>
+                ) : (
+                  <span className="text-xs font-semibold text-amber-600 mt-1">Pending</span>
+                )}
+              </div>
+            </div>
+
+            {/* Property specs — clean horizontal row */}
+            <div className="grid grid-cols-4 gap-3">
+              <div className="p-3 bg-bg rounded-xl text-center">
+                <p className="text-lg sm:text-xl font-bold text-heading">{stock.bedrooms}</p>
+                <p className="text-[11px] text-muted font-medium">Bed{stock.bedrooms !== 1 ? "s" : ""}</p>
+              </div>
+              <div className="p-3 bg-bg rounded-xl text-center">
+                <p className="text-lg sm:text-xl font-bold text-heading">{stock.bathrooms}</p>
+                <p className="text-[11px] text-muted font-medium">Bath{stock.bathrooms !== 1 ? "s" : ""}</p>
+              </div>
+              <div className="p-3 bg-bg rounded-xl text-center">
+                <p className="text-lg sm:text-xl font-bold text-heading">{stock.car_spaces}</p>
+                <p className="text-[11px] text-muted font-medium">Car{stock.car_spaces !== 1 ? "s" : ""}</p>
+              </div>
+              <div className="p-3 bg-bg rounded-xl text-center">
+                <p className="text-lg sm:text-xl font-bold text-heading">{totalArea ? `${totalArea}` : "—"}</p>
+                <p className="text-[11px] text-muted font-medium">m² Total</p>
               </div>
             </div>
           </div>
