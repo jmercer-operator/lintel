@@ -141,10 +141,9 @@ export function ContactsClient({ contacts, agents, projects, currentTab, searchQ
                 <th className="text-left px-4 py-3 font-semibold text-secondary text-xs uppercase tracking-wider hidden md:table-cell">Email</th>
                 <th className="text-left px-4 py-3 font-semibold text-secondary text-xs uppercase tracking-wider hidden lg:table-cell">Phone</th>
                 <th className="text-left px-4 py-3 font-semibold text-secondary text-xs uppercase tracking-wider">Type</th>
-                <th className="text-left px-4 py-3 font-semibold text-secondary text-xs uppercase tracking-wider hidden lg:table-cell">Buyer</th>
-                <th className="text-left px-4 py-3 font-semibold text-secondary text-xs uppercase tracking-wider hidden lg:table-cell">Source</th>
-                <th className="text-left px-4 py-3 font-semibold text-secondary text-xs uppercase tracking-wider hidden xl:table-cell">Lots</th>
-                <th className="text-left px-4 py-3 font-semibold text-secondary text-xs uppercase tracking-wider hidden xl:table-cell">Tags</th>
+                <th className="text-left px-4 py-3 font-semibold text-secondary text-xs uppercase tracking-wider hidden lg:table-cell">Agent</th>
+                <th className="text-left px-4 py-3 font-semibold text-secondary text-xs uppercase tracking-wider hidden lg:table-cell">Project</th>
+                <th className="text-left px-4 py-3 font-semibold text-secondary text-xs uppercase tracking-wider hidden xl:table-cell">Buyer</th>
                 <th className="text-left px-4 py-3 font-semibold text-secondary text-xs uppercase tracking-wider hidden md:table-cell">Added</th>
               </tr>
             </thead>
@@ -170,23 +169,18 @@ export function ContactsClient({ contacts, agents, projects, currentTab, searchQ
                     <td className="px-4 py-3">
                       <ClassificationBadge classification={contact.computed_classification} />
                     </td>
-                    <td className="px-4 py-3 hidden lg:table-cell">
-                      <BuyerTypeBadge buyerType={contact.buyer_type as BuyerType | null} />
+                    <td className="px-4 py-3 text-secondary text-xs hidden lg:table-cell">
+                      {contact.referring_agent_id
+                        ? (() => { const a = agents.find(ag => ag.id === contact.referring_agent_id); return a ? `${a.first_name} ${a.last_name}` : "—"; })()
+                        : contact.source === "direct_marketing" ? <span className="text-muted italic">Direct</span> : "—"}
                     </td>
-                    <td className="px-4 py-3 text-secondary capitalize hidden lg:table-cell">{contact.source || "—"}</td>
-                    <td className="px-4 py-3 text-secondary hidden xl:table-cell">
-                      {contact.linked_stock.length > 0 ? (
-                        <span className="font-mono text-xs">{contact.linked_stock.length}</span>
-                      ) : "—"}
+                    <td className="px-4 py-3 text-secondary text-xs hidden lg:table-cell">
+                      {contact.linked_stock.length > 0
+                        ? [...new Set(contact.linked_stock.map(s => s.project_name))].join(", ")
+                        : "—"}
                     </td>
                     <td className="px-4 py-3 hidden xl:table-cell">
-                      <div className="flex gap-1 flex-wrap">
-                        {(contact.tags || []).slice(0, 3).map((tag) => (
-                          <span key={tag} className="px-2 py-0.5 bg-bg-alt rounded-full text-[11px] text-secondary font-medium">
-                            {tag}
-                          </span>
-                        ))}
-                      </div>
+                      <BuyerTypeBadge buyerType={contact.buyer_type as BuyerType | null} />
                     </td>
                     <td className="px-4 py-3 text-secondary text-xs hidden md:table-cell">{timeAgo(contact.created_at)}</td>
                   </tr>
