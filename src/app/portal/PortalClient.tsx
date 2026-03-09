@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { Logo } from "@/components/Logo";
 import { RoleSwitcher } from "@/components/RoleSwitcher";
+import { SignOutButton } from "@/components/SignOutButton";
 import { ProjectStatusBadge } from "@/components/ProjectStatusBadge";
 import type { Contact, StockItem, Project, Agent, ProjectConstructionStatus } from "@/lib/types";
 // Inline types to avoid importing server-only modules
@@ -122,6 +123,7 @@ export default function PortalClient({
           <Logo size="sm" />
           <div className="flex items-center gap-3">
             <RoleSwitcher />
+            <SignOutButton variant="minimal" />
             <div className="flex items-center gap-2">
               <div className="w-8 h-8 rounded-full bg-emerald-primary flex items-center justify-center text-white text-xs font-semibold">
                 {contact.first_name[0]}
@@ -568,7 +570,7 @@ export default function PortalClient({
       <footer className="border-t border-border/50 mt-12">
         <div className="max-w-4xl mx-auto px-5 py-8 flex flex-col sm:flex-row items-center justify-between gap-3">
           <p className="text-xs text-muted">
-            © {new Date().getFullYear()} M Property Group. Powered by{" "}
+            © {new Date().getFullYear()} M Property. Powered by{" "}
             <span className="font-semibold">
               <span className="text-emerald-primary font-extrabold">L</span>
               <span className="text-body font-medium">INTEL</span>

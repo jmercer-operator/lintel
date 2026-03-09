@@ -4,6 +4,7 @@ import { useState } from "react";
 import { usePathname } from "next/navigation";
 import Link from "next/link";
 import { Logo } from "./Logo";
+import { SignOutButton } from "./SignOutButton";
 
 interface NavItem {
   label: string;
@@ -113,8 +114,9 @@ export function Sidebar() {
         ))}
       </nav>
 
-      {/* Collapse toggle */}
-      <div className="px-3 py-4 border-t border-border">
+      {/* Collapse toggle + Sign Out */}
+      <div className="px-3 py-4 border-t border-border space-y-1">
+        {!collapsed && <SignOutButton />}
         <button
           onClick={() => setCollapsed(!collapsed)}
           className={`

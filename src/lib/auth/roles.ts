@@ -8,11 +8,19 @@ export interface UserProfile {
   first_name: string | null;
   last_name: string | null;
   avatar_url: string | null;
+  auth_user_id: string | null;
   created_at: string;
   updated_at: string;
 }
 
 const ROLE_KEY = "lintel-role-preview";
+
+/**
+ * Check if preview mode is enabled (client-side).
+ */
+export function isPreviewMode(): boolean {
+  return process.env.NEXT_PUBLIC_PREVIEW_MODE === "true";
+}
 
 /**
  * Get current user role from localStorage (preview mode).
