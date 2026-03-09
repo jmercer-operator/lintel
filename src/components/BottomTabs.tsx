@@ -23,6 +23,15 @@ const tabs: TabItem[] = [
     href: "/",
   },
   {
+    label: "Projects",
+    icon: (active) => (
+      <svg width="22" height="22" viewBox="0 0 24 24" fill={active ? "currentColor" : "none"} stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+        <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z" />
+      </svg>
+    ),
+    href: "/projects",
+  },
+  {
     label: "Stock",
     icon: (active) => (
       <svg width="22" height="22" viewBox="0 0 24 24" fill={active ? "currentColor" : "none"} stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -31,16 +40,6 @@ const tabs: TabItem[] = [
       </svg>
     ),
     href: "/stock",
-  },
-  {
-    label: "Contacts",
-    icon: (active) => (
-      <svg width="22" height="22" viewBox="0 0 24 24" fill={active ? "currentColor" : "none"} stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-        <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
-        <circle cx="12" cy="7" r="4" />
-      </svg>
-    ),
-    href: "/contacts",
   },
   {
     label: "Agents",
