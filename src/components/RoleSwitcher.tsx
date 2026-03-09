@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { useRouter, usePathname } from "next/navigation";
-import { type UserRole, getCurrentUserRole, setCurrentUserRole } from "@/lib/auth/roles";
+import { type UserRole, getCurrentUserRole, setCurrentUserRole, isPreviewMode } from "@/lib/auth/roles";
 
 const roles: { key: UserRole; label: string }[] = [
   { key: "staff", label: "Staff" },
@@ -15,6 +15,7 @@ export function RoleSwitcher() {
   const pathname = usePathname();
   const [active, setActive] = useState<UserRole>("staff");
   const [mounted, setMounted] = useState(false);
+  const preview = isPreviewMode();
 
   useEffect(() => {
     setActive(getCurrentUserRole());
@@ -49,7 +50,8 @@ export function RoleSwitcher() {
     }
   }
 
-  if (!mounted) return null;
+  // Only show in preview mode
+  if (!mounted || !preview) return null;
 
   return (
     <div className="hidden md:flex items-center bg-bg-alt rounded-full p-0.5 border border-border">

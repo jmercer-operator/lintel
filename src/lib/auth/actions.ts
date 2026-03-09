@@ -154,13 +154,6 @@ export async function getAuthenticatedUser(): Promise<{
 }
 
 /**
- * Check if preview mode is enabled.
- */
-export function isPreviewMode(): boolean {
-  return process.env.NEXT_PUBLIC_PREVIEW_MODE === "true";
-}
-
-/**
  * Create test auth users and link them to existing records.
  */
 export async function createTestUsers(): Promise<{

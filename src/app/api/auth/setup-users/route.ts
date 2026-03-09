@@ -4,7 +4,7 @@ import { NextResponse } from "next/server";
 /**
  * POST /api/auth/setup-users
  * Creates test auth users and links them to existing DB records.
- * Protected: only works with service role key auth or in preview mode.
+ * Handles the auto-created user_profiles from the trigger.
  */
 export async function POST() {
   try {
@@ -15,16 +15,19 @@ export async function POST() {
         email: "am@mproperty.melbourne",
         password: "Lintel2026!",
         table: "user_profiles",
+        role: "staff",
       },
       {
         email: "sarah.mitchell@example.com",
         password: "Lintel2026!",
         table: "agents",
+        role: "agent",
       },
       {
         email: "david.chen@example.com",
         password: "Lintel2026!",
         table: "contacts",
+        role: "client",
       },
     ];
 
@@ -42,15 +45,9 @@ export async function POST() {
 
         if (existing) {
           authUserId = existing.id;
-          // Update password to ensure it's correct
           await admin.auth.admin.updateUserById(authUserId, {
             password: testUser.password,
             email_confirm: true,
-          });
-          results.push({
-            email: testUser.email,
-            status: "existing",
-            authUserId,
           });
         } else {
           const { data: newUser, error: createError } =
@@ -70,26 +67,19 @@ export async function POST() {
           }
 
           authUserId = newUser.user.id;
-          results.push({
-            email: testUser.email,
-            status: "created",
-            authUserId,
-          });
         }
 
         // Link auth_user_id in the corresponding table
-        const { error: updateError } = await admin
+        await admin
           .from(testUser.table)
           .update({ auth_user_id: authUserId })
           .eq("email", testUser.email);
 
-        if (updateError) {
-          results.push({
-            email: testUser.email,
-            status: "link_error",
-            error: updateError.message,
-          });
-        }
+        results.push({
+          email: testUser.email,
+          status: existing ? "existing" : "created",
+          authUserId,
+        });
       } catch (err) {
         results.push({
           email: testUser.email,
