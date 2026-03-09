@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
 import { DEFAULT_ORG_ID } from "@/lib/types";
+import type { DocumentVisibility } from "@/lib/types";
 
 /* ─── Agent Actions ─── */
 
@@ -374,5 +375,162 @@ export async function updateStockAction(formData: FormData) {
   revalidatePath(`/projects/${project_id}`);
   revalidatePath("/projects");
   revalidatePath("/");
+  return { success: true };
+}
+
+/* ─── Document Actions ─── */
+
+export async function uploadProjectDocumentAction(formData: FormData) {
+  const supabase = await createClient();
+
+  const project_id = formData.get("project_id") as string;
+  const category_id = formData.get("category_id") as string;
+  const visibility = (formData.get("visibility") as DocumentVisibility) || "agent";
+  const file = formData.get("file") as File;
+
+  if (!file || !project_id || !category_id) {
+    return { error: "File, project, and category are required" };
+  }
+
+  if (file.size > 50 * 1024 * 1024) {
+    return { error: "File size exceeds 50MB limit" };
+  }
+
+  const filePath = `${DEFAULT_ORG_ID}/${project_id}/${category_id}/${file.name}`;
+
+  const { error: uploadError } = await supabase.storage
+    .from("project-documents")
+    .upload(filePath, file, { upsert: true });
+
+  if (uploadError) return { error: uploadError.message };
+
+  const { error: dbError } = await supabase.from("project_documents").insert({
+    project_id,
+    org_id: DEFAULT_ORG_ID,
+    category_id,
+    file_name: file.name,
+    file_path: filePath,
+    file_size: file.size,
+    mime_type: file.type || "application/octet-stream",
+    visibility,
+    uploaded_by: null,
+  });
+
+  if (dbError) return { error: dbError.message };
+
+  revalidatePath(`/projects/${project_id}`);
+  revalidatePath("/documents");
+  return { success: true };
+}
+
+export async function deleteProjectDocumentAction(formData: FormData) {
+  const supabase = await createClient();
+
+  const id = formData.get("id") as string;
+  const file_path = formData.get("file_path") as string;
+  const project_id = formData.get("project_id") as string;
+
+  if (!id) return { error: "Document ID is required" };
+
+  if (file_path) {
+    await supabase.storage.from("project-documents").remove([file_path]);
+  }
+
+  const { error } = await supabase.from("project_documents").delete().eq("id", id);
+  if (error) return { error: error.message };
+
+  revalidatePath(`/projects/${project_id}`);
+  revalidatePath("/documents");
+  return { success: true };
+}
+
+export async function uploadClientDocumentAction(formData: FormData) {
+  const supabase = await createClient();
+
+  const contact_id = formData.get("contact_id") as string;
+  const document_type = formData.get("document_type") as string;
+  const file = formData.get("file") as File;
+
+  if (!file || !contact_id || !document_type) {
+    return { error: "File, contact, and document type are required" };
+  }
+
+  if (file.size > 50 * 1024 * 1024) {
+    return { error: "File size exceeds 50MB limit" };
+  }
+
+  const typeSlug = document_type.toLowerCase().replace(/\s+/g, "-");
+  const filePath = `${DEFAULT_ORG_ID}/${contact_id}/${typeSlug}/${file.name}`;
+
+  const { error: uploadError } = await supabase.storage
+    .from("client-documents")
+    .upload(filePath, file, { upsert: true });
+
+  if (uploadError) return { error: uploadError.message };
+
+  const { error: dbError } = await supabase.from("client_documents").insert({
+    contact_id,
+    org_id: DEFAULT_ORG_ID,
+    document_type,
+    file_name: file.name,
+    file_path: filePath,
+    file_size: file.size,
+    mime_type: file.type || "application/octet-stream",
+    visibility: "staff",
+    uploaded_by: null,
+  });
+
+  if (dbError) return { error: dbError.message };
+
+  revalidatePath(`/contacts/${contact_id}`);
+  return { success: true };
+}
+
+export async function deleteClientDocumentAction(formData: FormData) {
+  const supabase = await createClient();
+
+  const id = formData.get("id") as string;
+  const file_path = formData.get("file_path") as string;
+  const contact_id = formData.get("contact_id") as string;
+
+  if (!id) return { error: "Document ID is required" };
+
+  if (file_path) {
+    await supabase.storage.from("client-documents").remove([file_path]);
+  }
+
+  const { error } = await supabase.from("client_documents").delete().eq("id", id);
+  if (error) return { error: error.message };
+
+  revalidatePath(`/contacts/${contact_id}`);
+  return { success: true };
+}
+
+/* ─── Milestone Actions ─── */
+
+export async function updateMilestoneAction(formData: FormData) {
+  const supabase = await createClient();
+
+  const id = formData.get("id") as string;
+  const status = formData.get("status") as string;
+  const target_date = (formData.get("target_date") as string) || null;
+  const completed_date = (formData.get("completed_date") as string) || null;
+  const project_id = formData.get("project_id") as string;
+
+  if (!id) return { error: "Milestone ID is required" };
+
+  const updates: Record<string, unknown> = { updated_at: new Date().toISOString() };
+  if (status) updates.status = status;
+  if (target_date !== undefined) updates.target_date = target_date;
+  if (completed_date !== undefined) updates.completed_date = completed_date;
+
+  const { error } = await supabase
+    .from("project_milestones")
+    .update(updates)
+    .eq("id", id);
+
+  if (error) return { error: error.message };
+
+  revalidatePath(`/projects/${project_id}`);
   return { success: true };
 }

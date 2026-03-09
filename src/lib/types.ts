@@ -219,3 +219,19 @@ export interface AgentProject {
   project_id: string;
   assigned_at: string;
 }
+
+/* ─── Document & Milestone Types ─── */
+
+export type DocumentVisibility = "staff" | "agent" | "client";
+
+export const VISIBILITY_LABELS: Record<DocumentVisibility, string> = {
+  staff: "Staff Only",
+  agent: "Agents",
+  client: "Everyone",
+};
+
+export const VISIBILITY_COLORS: Record<DocumentVisibility, { bg: string; text: string }> = {
+  staff: { bg: "bg-[#E05252]/10", text: "text-[#E05252]" },
+  agent: { bg: "bg-[#D4A855]/10", text: "text-[#D4A855]" },
+  client: { bg: "bg-[#1A9E6F]/10", text: "text-[#1A9E6F]" },
+};

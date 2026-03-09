@@ -10,13 +10,16 @@ import { StatusBadge } from "@/components/StatusBadge";
 import { ClassificationBadge } from "@/components/ClassificationBadge";
 import { ContactForm } from "@/components/ContactForm";
 import { formatPrice, type ContactWithLinkedStock, type Agent, type StockStatus } from "@/lib/types";
+import { ClientDocuments } from "@/components/ClientDocuments";
+import type { ClientDocument } from "@/components/ClientDocuments";
 
 interface Props {
   contact: ContactWithLinkedStock;
   agents: Agent[];
+  clientDocuments: ClientDocument[];
 }
 
-export function ContactDetailClient({ contact, agents }: Props) {
+export function ContactDetailClient({ contact, agents, clientDocuments }: Props) {
   const router = useRouter();
   const [showEditModal, setShowEditModal] = useState(false);
 
@@ -146,6 +149,9 @@ export function ContactDetailClient({ contact, agents }: Props) {
               </div>
             )}
           </Card>
+
+          {/* Client Documents */}
+          <ClientDocuments contactId={contact.id} documents={clientDocuments} />
 
           {/* Activity Timeline Placeholder */}
           <Card>

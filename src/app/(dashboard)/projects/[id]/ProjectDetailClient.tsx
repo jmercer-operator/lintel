@@ -1,21 +1,31 @@
 "use client";
 
 import { useState } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { Card } from "@/components/Card";
 import { Button } from "@/components/Button";
 import { StatusBadge } from "@/components/StatusBadge";
 import { Modal } from "@/components/Modal";
 import { StockForm } from "@/components/StockForm";
+import { DocumentsTab } from "@/components/DocumentsTab";
+import type { DocumentCategory, ProjectDocument } from "@/components/DocumentsTab";
+import { MilestonesTab } from "@/components/MilestonesTab";
+import type { ProjectMilestone } from "@/components/MilestonesTab";
 import { ALL_STATUSES, formatPrice, formatArea, timeAgo } from "@/lib/types";
 import type { ProjectWithStats, StockItem, StockStatus, Agent } from "@/lib/types";
+
+type TabKey = "stock" | "documents" | "milestones";
 
 interface ProjectDetailClientProps {
   project: ProjectWithStats;
   stock: StockItem[];
   statusFilter: string;
   agents?: Agent[];
+  categories: DocumentCategory[];
+  documents: ProjectDocument[];
+  milestones: ProjectMilestone[];
+  activeTab: TabKey;
 }
 
 const metricConfig = [
@@ -26,14 +36,43 @@ const metricConfig = [
   { key: "settled" as const, label: "Settled", color: "#2D8C5A" },
 ];
 
-export function ProjectDetailClient({ project, stock, statusFilter, agents }: ProjectDetailClientProps) {
+const tabs: { key: TabKey; label: string }[] = [
+  { key: "stock", label: "Stock" },
+  { key: "documents", label: "Documents" },
+  { key: "milestones", label: "Milestones" },
+];
+
+export function ProjectDetailClient({
+  project,
+  stock,
+  statusFilter,
+  agents,
+  categories,
+  documents,
+  milestones,
+  activeTab,
+}: ProjectDetailClientProps) {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const [showAddStock, setShowAddStock] = useState(false);
   const [editingStock, setEditingStock] = useState<StockItem | null>(null);
 
   function handleStatusChange(value: string) {
+    const params = new URLSearchParams(searchParams.toString());
+    if (value !== "All") {
+      params.set("status", value);
+    } else {
+      params.delete("status");
+    }
+    params.set("tab", "stock");
+    router.push(`/projects/${project.id}?${params}`);
+  }
+
+  function handleTabChange(tab: TabKey) {
     const params = new URLSearchParams();
-    if (value !== "All") params.set("status", value);
+    if (tab !== "stock") params.set("tab", tab);
+    const statusParam = searchParams.get("status");
+    if (tab === "stock" && statusParam) params.set("status", statusParam);
     router.push(`/projects/${project.id}${params.toString() ? `?${params}` : ""}`);
   }
 
@@ -60,13 +99,15 @@ export function ProjectDetailClient({ project, stock, statusFilter, agents }: Pr
               {project.postcode && ` ${project.postcode}`}
             </p>
           </div>
-          <Button onClick={() => setShowAddStock(true)}>
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-              <line x1="12" y1="5" x2="12" y2="19" />
-              <line x1="5" y1="12" x2="19" y2="12" />
-            </svg>
-            Add Lot
-          </Button>
+          {activeTab === "stock" && (
+            <Button onClick={() => setShowAddStock(true)}>
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <line x1="12" y1="5" x2="12" y2="19" />
+                <line x1="5" y1="12" x2="19" y2="12" />
+              </svg>
+              Add Lot
+            </Button>
+          )}
         </div>
       </div>
 
@@ -82,79 +123,55 @@ export function ProjectDetailClient({ project, stock, statusFilter, agents }: Pr
         ))}
       </div>
 
-      {/* Stock Table */}
-      <Card padding="sm">
-        <div className="px-4 py-4 sm:px-6 border-b border-border flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
-          <div>
-            <h2 className="text-lg font-semibold text-heading">Stock</h2>
-            <p className="text-sm text-secondary mt-0.5">
-              {statusFilter === "All" ? "All lots" : statusFilter} · {stock.length} {stock.length === 1 ? "lot" : "lots"}
-            </p>
-          </div>
-          <div className="relative">
-            <select
-              value={statusFilter}
-              onChange={(e) => handleStatusChange(e.target.value)}
-              className="appearance-none px-4 py-2 pr-9 text-sm font-medium rounded-[var(--radius-input)] border border-border bg-white text-body cursor-pointer hover:border-secondary focus:border-emerald-primary focus:ring-1 focus:ring-emerald-primary focus:outline-none transition-colors"
+      {/* Tab Bar */}
+      <div className="border-b border-border">
+        <div className="flex gap-0">
+          {tabs.map((tab) => (
+            <button
+              key={tab.key}
+              onClick={() => handleTabChange(tab.key)}
+              className={`
+                px-5 py-3 text-sm font-semibold transition-colors relative cursor-pointer
+                ${activeTab === tab.key
+                  ? "text-emerald-primary"
+                  : "text-secondary hover:text-heading"
+                }
+              `}
             >
-              <option value="All">All Statuses</option>
-              {ALL_STATUSES.map((s) => (
-                <option key={s} value={s}>{s}</option>
-              ))}
-            </select>
-            <svg className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none text-secondary" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-              <polyline points="6 9 12 15 18 9" />
-            </svg>
-          </div>
-        </div>
-        <div className="overflow-x-auto">
-          <table className="w-full min-w-[900px]">
-            <thead>
-              <tr className="border-b border-border">
-                <th className="px-4 sm:px-6 py-3 text-left text-xs font-semibold text-muted uppercase tracking-wider">Lot</th>
-                <th className="px-4 sm:px-6 py-3 text-center text-xs font-semibold text-muted uppercase tracking-wider">Bed</th>
-                <th className="px-4 sm:px-6 py-3 text-center text-xs font-semibold text-muted uppercase tracking-wider">Bath</th>
-                <th className="px-4 sm:px-6 py-3 text-center text-xs font-semibold text-muted uppercase tracking-wider">Car</th>
-                <th className="px-4 sm:px-6 py-3 text-right text-xs font-semibold text-muted uppercase tracking-wider">m² Int</th>
-                <th className="px-4 sm:px-6 py-3 text-right text-xs font-semibold text-muted uppercase tracking-wider">m² Ext</th>
-                <th className="px-4 sm:px-6 py-3 text-left text-xs font-semibold text-muted uppercase tracking-wider">Price</th>
-                <th className="px-4 sm:px-6 py-3 text-left text-xs font-semibold text-muted uppercase tracking-wider">Status</th>
-                <th className="px-4 sm:px-6 py-3 text-left text-xs font-semibold text-muted uppercase tracking-wider">Agent</th>
-                <th className="px-4 sm:px-6 py-3 text-left text-xs font-semibold text-muted uppercase tracking-wider">Updated</th>
-              </tr>
-            </thead>
-            <tbody>
-              {stock.map((row) => (
-                <tr
-                  key={row.id}
-                  onClick={() => setEditingStock(row)}
-                  className="border-b border-border last:border-0 hover:bg-bg-alt transition-colors cursor-pointer"
-                >
-                  <td className="px-4 sm:px-6 py-3.5 text-sm font-mono font-semibold text-heading">{row.lot_number}</td>
-                  <td className="px-4 sm:px-6 py-3.5 text-sm font-mono text-center text-body">{row.bedrooms}</td>
-                  <td className="px-4 sm:px-6 py-3.5 text-sm font-mono text-center text-body">{row.bathrooms}</td>
-                  <td className="px-4 sm:px-6 py-3.5 text-sm font-mono text-center text-body">{row.car_spaces}</td>
-                  <td className="px-4 sm:px-6 py-3.5 text-sm font-mono text-right text-body">{formatArea(row.internal_area)}</td>
-                  <td className="px-4 sm:px-6 py-3.5 text-sm font-mono text-right text-body">{formatArea(row.external_area)}</td>
-                  <td className="px-4 sm:px-6 py-3.5 text-sm font-mono font-medium text-heading">{formatPrice(row.price)}</td>
-                  <td className="px-4 sm:px-6 py-3.5">
-                    <StatusBadge status={row.status as StockStatus} />
-                  </td>
-                  <td className="px-4 sm:px-6 py-3.5 text-sm text-body">{row.agent_name || "—"}</td>
-                  <td className="px-4 sm:px-6 py-3.5 text-sm text-secondary">{timeAgo(row.updated_at)}</td>
-                </tr>
-              ))}
-              {stock.length === 0 && (
-                <tr>
-                  <td colSpan={10} className="px-6 py-12 text-center text-secondary text-sm">
-                    No lots found{statusFilter !== "All" ? ` with status "${statusFilter}"` : ""}. Click &quot;Add Lot&quot; to create one.
-                  </td>
-                </tr>
+              {tab.label}
+              {activeTab === tab.key && (
+                <span className="absolute bottom-0 left-0 right-0 h-[2px] bg-emerald-primary rounded-full" />
               )}
-            </tbody>
-          </table>
+            </button>
+          ))}
         </div>
-      </Card>
+      </div>
+
+      {/* Tab Content */}
+      {activeTab === "stock" && (
+        <StockTab
+          project={project}
+          stock={stock}
+          statusFilter={statusFilter}
+          onStatusChange={handleStatusChange}
+          onEditStock={setEditingStock}
+        />
+      )}
+
+      {activeTab === "documents" && (
+        <DocumentsTab
+          projectId={project.id}
+          categories={categories}
+          documents={documents}
+        />
+      )}
+
+      {activeTab === "milestones" && (
+        <MilestonesTab
+          projectId={project.id}
+          milestones={milestones}
+        />
+      )}
 
       {/* Add Stock Modal */}
       <Modal open={showAddStock} onClose={() => setShowAddStock(false)} title="Add New Lot">
@@ -189,5 +206,96 @@ export function ProjectDetailClient({ project, stock, statusFilter, agents }: Pr
         )}
       </Modal>
     </div>
+  );
+}
+
+/* ─── Stock Tab (extracted) ─── */
+
+function StockTab({
+  project,
+  stock,
+  statusFilter,
+  onStatusChange,
+  onEditStock,
+}: {
+  project: ProjectWithStats;
+  stock: StockItem[];
+  statusFilter: string;
+  onStatusChange: (v: string) => void;
+  onEditStock: (s: StockItem) => void;
+}) {
+  return (
+    <Card padding="sm">
+      <div className="px-4 py-4 sm:px-6 border-b border-border flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+        <div>
+          <h2 className="text-lg font-semibold text-heading">Stock</h2>
+          <p className="text-sm text-secondary mt-0.5">
+            {statusFilter === "All" ? "All lots" : statusFilter} · {stock.length} {stock.length === 1 ? "lot" : "lots"}
+          </p>
+        </div>
+        <div className="relative">
+          <select
+            value={statusFilter}
+            onChange={(e) => onStatusChange(e.target.value)}
+            className="appearance-none px-4 py-2 pr-9 text-sm font-medium rounded-[var(--radius-input)] border border-border bg-white text-body cursor-pointer hover:border-secondary focus:border-emerald-primary focus:ring-1 focus:ring-emerald-primary focus:outline-none transition-colors"
+          >
+            <option value="All">All Statuses</option>
+            {ALL_STATUSES.map((s) => (
+              <option key={s} value={s}>{s}</option>
+            ))}
+          </select>
+          <svg className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none text-secondary" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <polyline points="6 9 12 15 18 9" />
+          </svg>
+        </div>
+      </div>
+      <div className="overflow-x-auto">
+        <table className="w-full min-w-[900px]">
+          <thead>
+            <tr className="border-b border-border">
+              <th className="px-4 sm:px-6 py-3 text-left text-xs font-semibold text-muted uppercase tracking-wider">Lot</th>
+              <th className="px-4 sm:px-6 py-3 text-center text-xs font-semibold text-muted uppercase tracking-wider">Bed</th>
+              <th className="px-4 sm:px-6 py-3 text-center text-xs font-semibold text-muted uppercase tracking-wider">Bath</th>
+              <th className="px-4 sm:px-6 py-3 text-center text-xs font-semibold text-muted uppercase tracking-wider">Car</th>
+              <th className="px-4 sm:px-6 py-3 text-right text-xs font-semibold text-muted uppercase tracking-wider">m² Int</th>
+              <th className="px-4 sm:px-6 py-3 text-right text-xs font-semibold text-muted uppercase tracking-wider">m² Ext</th>
+              <th className="px-4 sm:px-6 py-3 text-left text-xs font-semibold text-muted uppercase tracking-wider">Price</th>
+              <th className="px-4 sm:px-6 py-3 text-left text-xs font-semibold text-muted uppercase tracking-wider">Status</th>
+              <th className="px-4 sm:px-6 py-3 text-left text-xs font-semibold text-muted uppercase tracking-wider">Agent</th>
+              <th className="px-4 sm:px-6 py-3 text-left text-xs font-semibold text-muted uppercase tracking-wider">Updated</th>
+            </tr>
+          </thead>
+          <tbody>
+            {stock.map((row) => (
+              <tr
+                key={row.id}
+                onClick={() => onEditStock(row)}
+                className="border-b border-border last:border-0 hover:bg-bg-alt transition-colors cursor-pointer"
+              >
+                <td className="px-4 sm:px-6 py-3.5 text-sm font-mono font-semibold text-heading">{row.lot_number}</td>
+                <td className="px-4 sm:px-6 py-3.5 text-sm font-mono text-center text-body">{row.bedrooms}</td>
+                <td className="px-4 sm:px-6 py-3.5 text-sm font-mono text-center text-body">{row.bathrooms}</td>
+                <td className="px-4 sm:px-6 py-3.5 text-sm font-mono text-center text-body">{row.car_spaces}</td>
+                <td className="px-4 sm:px-6 py-3.5 text-sm font-mono text-right text-body">{formatArea(row.internal_area)}</td>
+                <td className="px-4 sm:px-6 py-3.5 text-sm font-mono text-right text-body">{formatArea(row.external_area)}</td>
+                <td className="px-4 sm:px-6 py-3.5 text-sm font-mono font-medium text-heading">{formatPrice(row.price)}</td>
+                <td className="px-4 sm:px-6 py-3.5">
+                  <StatusBadge status={row.status as StockStatus} />
+                </td>
+                <td className="px-4 sm:px-6 py-3.5 text-sm text-body">{row.agent_name || "—"}</td>
+                <td className="px-4 sm:px-6 py-3.5 text-sm text-secondary">{timeAgo(row.updated_at)}</td>
+              </tr>
+            ))}
+            {stock.length === 0 && (
+              <tr>
+                <td colSpan={10} className="px-6 py-12 text-center text-secondary text-sm">
+                  No lots found{statusFilter !== "All" ? ` with status "${statusFilter}"` : ""}. Click &quot;Add Lot&quot; to create one.
+                </td>
+              </tr>
+            )}
+          </tbody>
+        </table>
+      </div>
+    </Card>
   );
 }
