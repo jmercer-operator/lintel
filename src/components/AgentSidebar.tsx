@@ -110,9 +110,9 @@ export function AgentSidebar() {
     >
       {/* Logo */}
       <div className={`flex items-center ${collapsed ? "justify-center" : "justify-between"} px-5 h-16 border-b border-border`}>
-        {!collapsed && <Logo size="md" />}
+        {!collapsed && <a href="/agent"><Logo size="md" /></a>}
         {collapsed && (
-          <span className="text-xl font-extrabold text-emerald-primary select-none">L</span>
+          <a href="/agent" className="text-xl font-extrabold text-emerald-primary select-none">L</a>
         )}
       </div>
 

@@ -120,14 +120,8 @@ export default function PortalClient({
       {/* Top Bar — minimal */}
       <header className="sticky top-0 z-30 bg-white/90 backdrop-blur-md border-b border-border/50">
         <div className="max-w-4xl mx-auto flex items-center justify-between px-5 h-14">
-          <Logo size="sm" />
+          <a href="/portal"><Logo size="sm" /></a>
           <div className="flex items-center gap-3">
-            <a
-              href="/portal"
-              className="text-sm text-emerald-primary font-semibold"
-            >
-              Home
-            </a>
             <RoleSwitcher />
             <a href="/portal/profile" className="cursor-pointer">
               <div className="w-8 h-8 rounded-full bg-emerald-primary flex items-center justify-center text-white text-xs font-semibold">

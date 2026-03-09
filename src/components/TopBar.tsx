@@ -34,9 +34,9 @@ export function TopBar({ avatarName = "AM" }: TopBarProps) {
 
   return (
     <header className="h-16 bg-white border-b border-border flex items-center justify-between px-5 sticky top-0 z-20">
-      {/* Mobile: logo */}
+      {/* Mobile: logo — click goes to home based on role */}
       <div className="lg:hidden flex items-center gap-3">
-        <Logo size="sm" />
+        <a href={(() => { const r = getCurrentUserRole(); return r === 'agent' ? '/agent' : r === 'client' ? '/portal' : '/'; })()}><Logo size="sm" /></a>
       </div>
 
       {/* Desktop: search placeholder */}

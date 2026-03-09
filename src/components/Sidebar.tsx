@@ -90,9 +90,9 @@ export function Sidebar() {
     >
       {/* Logo */}
       <div className={`flex items-center ${collapsed ? "justify-center" : "justify-between"} px-5 h-16 border-b border-border`}>
-        {!collapsed && <Logo size="md" />}
+        {!collapsed && <a href="/"><Logo size="md" /></a>}
         {collapsed && (
-          <span className="text-xl font-extrabold text-emerald-primary select-none">L</span>
+          <a href="/" className="text-xl font-extrabold text-emerald-primary select-none">L</a>
         )}
       </div>
 
