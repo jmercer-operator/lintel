@@ -65,6 +65,8 @@ export function AgentDetailClient({
   const router = useRouter();
   const [showEditModal, setShowEditModal] = useState(false);
   const [showAssignModal, setShowAssignModal] = useState(false);
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [deleting, setDeleting] = useState(false);
 
   // Change 2: Only show projects where agent has assigned stock
   const assignedProjects = projects.filter((p) => projectIdsWithAssignedStock.includes(p.id));
@@ -116,6 +118,10 @@ export function AgentDetailClient({
             Assign Stock
           </Button>
           <Button onClick={() => setShowEditModal(true)}>Edit Agent</Button>
+          <Button variant="secondary" onClick={() => setShowDeleteConfirm(true)} className="!text-red-600 !border-red-200 hover:!bg-red-50">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="3 6 5 6 21 6" /><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" /></svg>
+            Delete
+          </Button>
         </div>
       </div>
 
@@ -298,6 +304,37 @@ export function AgentDetailClient({
           }}
           onCancel={() => setShowEditModal(false)}
         />
+      </Modal>
+
+      {/* Delete Confirmation */}
+      <Modal open={showDeleteConfirm} onClose={() => setShowDeleteConfirm(false)} title="Delete Agent">
+        <div className="space-y-4">
+          <div className="flex items-start gap-3 p-4 bg-red-50 border border-red-200 rounded-xl">
+            <svg className="w-6 h-6 text-red-500 flex-shrink-0 mt-0.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z" /><line x1="12" y1="9" x2="12" y2="13" /><line x1="12" y1="17" x2="12.01" y2="17" /></svg>
+            <div>
+              <p className="font-semibold text-red-800">This action cannot be undone</p>
+              <p className="text-sm text-red-700 mt-1">Deleting <strong>{agent.first_name} {agent.last_name}</strong> will remove them permanently. Any stock assigned to this agent will be unassigned.</p>
+            </div>
+          </div>
+          <div className="flex justify-end gap-3">
+            <Button variant="secondary" onClick={() => setShowDeleteConfirm(false)}>Cancel</Button>
+            <button
+              onClick={async () => {
+                setDeleting(true);
+                try {
+                  const res = await fetch(`/api/agents/${agent.id}`, { method: "DELETE" });
+                  if (res.ok) router.push("/agents");
+                } finally {
+                  setDeleting(false);
+                }
+              }}
+              disabled={deleting}
+              className="px-4 py-2 bg-red-600 text-white text-sm font-semibold rounded-lg hover:bg-red-700 transition-colors disabled:opacity-50 cursor-pointer"
+            >
+              {deleting ? "Deleting..." : "Delete Agent"}
+            </button>
+          </div>
+        </div>
       </Modal>
 
       {/* Assign Stock Modal */}
