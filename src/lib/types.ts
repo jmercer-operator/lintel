@@ -1,5 +1,18 @@
 export type StockStatus = "Available" | "EOI" | "Under Contract" | "Exchanged" | "Settled";
 export type ProjectStatus = "active" | "completed" | "on_hold" | "archived";
+export type ProjectConstructionStatus = "pre_construction" | "under_construction" | "complete";
+
+export const PROJECT_CONSTRUCTION_STATUS_LABELS: Record<ProjectConstructionStatus, string> = {
+  pre_construction: "Pre-Construction",
+  under_construction: "Under Construction",
+  complete: "Complete",
+};
+
+export const PROJECT_CONSTRUCTION_STATUS_COLORS: Record<ProjectConstructionStatus, { bg: string; text: string; hex: string }> = {
+  pre_construction: { bg: "bg-[#D4A855]/10", text: "text-[#D4A855]", hex: "#D4A855" },
+  under_construction: { bg: "bg-[#1A9E6F]/10", text: "text-[#1A9E6F]", hex: "#1A9E6F" },
+  complete: { bg: "bg-[#6B7A70]/10", text: "text-[#6B7A70]", hex: "#6B7A70" },
+};
 
 export const ALL_STATUSES: StockStatus[] = ["Available", "EOI", "Under Contract", "Exchanged", "Settled"];
 
@@ -35,6 +48,11 @@ export interface Project {
   image_url: string | null;
   logo_url: string | null;
   hero_render_url: string | null;
+  project_status: ProjectConstructionStatus | null;
+  development_type: string | null;
+  num_dwellings: number | null;
+  num_commercial: number | null;
+  num_hotel_keys: number | null;
   created_at: string;
   updated_at: string;
 }
@@ -242,6 +260,8 @@ export interface AgentProject {
   id: string;
   agent_id: string;
   project_id: string;
+  commission_type: CommissionType | null;
+  commission_rate: number | null;
   assigned_at: string;
 }
 

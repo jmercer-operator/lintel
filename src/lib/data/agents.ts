@@ -1,5 +1,5 @@
 import { createClient } from "@/lib/supabase/server";
-import type { Agent, AgentWithStats } from "@/lib/types";
+import type { Agent, AgentWithStats, AgentProject } from "@/lib/types";
 
 export async function getAgents(): Promise<Agent[]> {
   const supabase = await createClient();
@@ -64,7 +64,7 @@ export async function getAgentWithStats(id: string): Promise<AgentWithStats | nu
 }
 
 export async function getAgentsWithProjectCounts(): Promise<
-  (Agent & { project_count: number; lot_count: number })[]
+  (Agent & { project_count: number; lot_count: number; available_count: number })[]
 > {
   const supabase = await createClient();
 
@@ -100,9 +100,33 @@ export async function getAgentsWithProjectCounts(): Promise<
     if (s.agent_id) lotCounts[s.agent_id] = (lotCounts[s.agent_id] || 0) + 1;
   }
 
+  // Get available lot counts per agent
+  const { data: availableStock } = await supabase
+    .from("stock")
+    .select("agent_id")
+    .in("agent_id", agentIds)
+    .eq("status", "Available");
+
+  const availableCounts: Record<string, number> = {};
+  for (const s of availableStock || []) {
+    if (s.agent_id) availableCounts[s.agent_id] = (availableCounts[s.agent_id] || 0) + 1;
+  }
+
   return (agents as Agent[]).map((a) => ({
     ...a,
     project_count: projectCounts[a.id] || 0,
     lot_count: lotCounts[a.id] || 0,
+    available_count: availableCounts[a.id] || 0,
   }));
+}
+
+export async function getAgentProjectsWithCommission(agentId: string): Promise<AgentProject[]> {
+  const supabase = await createClient();
+  const { data, error } = await supabase
+    .from("agent_projects")
+    .select("*")
+    .eq("agent_id", agentId);
+
+  if (error) throw error;
+  return (data || []) as AgentProject[];
 }

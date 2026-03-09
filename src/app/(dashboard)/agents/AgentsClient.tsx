@@ -9,7 +9,7 @@ import { AgentForm } from "@/components/AgentForm";
 import type { Agent, ProjectWithStats } from "@/lib/types";
 
 interface Props {
-  agents: (Agent & { project_count: number; lot_count: number })[];
+  agents: (Agent & { project_count: number; lot_count: number; available_count: number })[];
   projects: ProjectWithStats[];
 }
 
@@ -79,10 +79,8 @@ export function AgentsClient({ agents, projects }: Props) {
                   <p className="text-[10px] text-secondary uppercase tracking-wider">Lots</p>
                 </div>
                 <div>
-                  <p className="text-lg font-bold text-heading font-mono">
-                    {agent.commission_rate ? `${agent.commission_rate}%` : "—"}
-                  </p>
-                  <p className="text-[10px] text-secondary uppercase tracking-wider">Commission</p>
+                  <p className="text-lg font-bold text-[#1A9E6F] font-mono">{agent.available_count}</p>
+                  <p className="text-[10px] text-secondary uppercase tracking-wider">Available</p>
                 </div>
               </div>
 
@@ -91,7 +89,6 @@ export function AgentsClient({ agents, projects }: Props) {
                   <p className="text-xs text-secondary font-mono">{agent.phone}</p>
                 </div>
               )}
-
             </Card>
           </div>
         ))}

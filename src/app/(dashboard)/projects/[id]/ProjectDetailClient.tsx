@@ -14,8 +14,10 @@ import { MilestonesTab } from "@/components/MilestonesTab";
 import type { ProjectMilestone } from "@/components/MilestonesTab";
 import { ProjectLogo } from "@/components/ProjectLogo";
 import { ReserveLotModal } from "@/components/ReserveLotModal";
+import { ProjectStatusBadge } from "@/components/ProjectStatusBadge";
+import { NewProjectForm } from "@/components/NewProjectForm";
 import { ALL_STATUSES, formatPrice, formatArea, timeAgo } from "@/lib/types";
-import type { ProjectWithStats, StockItem, StockStatus, Agent, ContactWithLinkedStock } from "@/lib/types";
+import type { ProjectWithStats, StockItem, StockStatus, Agent, ContactWithLinkedStock, ProjectConstructionStatus } from "@/lib/types";
 
 type TabKey = "stock" | "documents" | "milestones";
 
@@ -65,6 +67,7 @@ export function ProjectDetailClient({
   const [showAddStock, setShowAddStock] = useState(false);
   const [editingStock, setEditingStock] = useState<StockItem | null>(null);
   const [reservingStock, setReservingStock] = useState<StockItem | null>(null);
+  const [showEditProject, setShowEditProject] = useState(false);
 
   function handleStatusChange(value: string) {
     const params = new URLSearchParams(searchParams.toString());
@@ -103,6 +106,7 @@ export function ProjectDetailClient({
             <div className="flex items-center gap-3">
               <ProjectLogo logoUrl={project.logo_url} name={project.name} size={32} />
               <h1 className="text-2xl font-bold text-heading">{project.name}</h1>
+              <ProjectStatusBadge status={project.project_status as ProjectConstructionStatus | null} />
             </div>
             <p className="text-secondary text-sm mt-1">
               {project.address}
@@ -111,15 +115,20 @@ export function ProjectDetailClient({
               {project.postcode && ` ${project.postcode}`}
             </p>
           </div>
-          {activeTab === "stock" && (
-            <Button onClick={() => setShowAddStock(true)}>
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                <line x1="12" y1="5" x2="12" y2="19" />
-                <line x1="5" y1="12" x2="19" y2="12" />
-              </svg>
-              Add Lot
+          <div className="flex gap-2">
+            <Button variant="secondary" onClick={() => setShowEditProject(true)}>
+              Edit Project
             </Button>
-          )}
+            {activeTab === "stock" && (
+              <Button onClick={() => setShowAddStock(true)}>
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <line x1="12" y1="5" x2="12" y2="19" />
+                  <line x1="5" y1="12" x2="19" y2="12" />
+                </svg>
+                Add Lot
+              </Button>
+            )}
+          </div>
         </div>
       </div>
 
@@ -134,6 +143,42 @@ export function ProjectDetailClient({
           </Card>
         ))}
       </div>
+
+      {/* Overview — Project Fields */}
+      {(project.development_type || project.description || project.num_dwellings || project.num_commercial || project.num_hotel_keys) && (
+        <Card padding="md">
+          <h3 className="text-sm font-semibold text-secondary uppercase tracking-wider mb-3">Overview</h3>
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+            {project.development_type && (
+              <div>
+                <p className="text-xs text-secondary mb-0.5">Development Type</p>
+                <p className="text-sm font-medium text-heading">{project.development_type}</p>
+              </div>
+            )}
+            {(project.num_dwellings != null && project.num_dwellings > 0) && (
+              <div>
+                <p className="text-xs text-secondary mb-0.5">Dwellings</p>
+                <p className="text-sm font-bold font-mono text-heading">{project.num_dwellings}</p>
+              </div>
+            )}
+            {(project.num_commercial != null && project.num_commercial > 0) && (
+              <div>
+                <p className="text-xs text-secondary mb-0.5">Commercial</p>
+                <p className="text-sm font-bold font-mono text-heading">{project.num_commercial}</p>
+              </div>
+            )}
+            {(project.num_hotel_keys != null && project.num_hotel_keys > 0) && (
+              <div>
+                <p className="text-xs text-secondary mb-0.5">Hotel Keys</p>
+                <p className="text-sm font-bold font-mono text-heading">{project.num_hotel_keys}</p>
+              </div>
+            )}
+          </div>
+          {project.description && (
+            <p className="text-sm text-body mt-3 whitespace-pre-wrap">{project.description}</p>
+          )}
+        </Card>
+      )}
 
       {/* Tab Bar */}
       <div className="border-b border-border">
@@ -219,6 +264,18 @@ export function ProjectDetailClient({
             onCancel={() => setEditingStock(null)}
           />
         )}
+      </Modal>
+
+      {/* Edit Project Modal */}
+      <Modal open={showEditProject} onClose={() => setShowEditProject(false)} title="Edit Project">
+        <NewProjectForm
+          project={project}
+          onSuccess={() => {
+            setShowEditProject(false);
+            router.refresh();
+          }}
+          onCancel={() => setShowEditProject(false)}
+        />
       </Modal>
 
       {/* Reserve Lot Modal */}

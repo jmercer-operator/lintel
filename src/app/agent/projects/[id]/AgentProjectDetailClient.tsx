@@ -5,7 +5,8 @@ import Link from "next/link";
 import { Card } from "@/components/Card";
 import { StatusBadge } from "@/components/StatusBadge";
 import { ProjectLogo } from "@/components/ProjectLogo";
-import type { ProjectWithStats, StockItem, StockStatus } from "@/lib/types";
+import { ProjectStatusBadge } from "@/components/ProjectStatusBadge";
+import type { ProjectWithStats, StockItem, StockStatus, ProjectConstructionStatus } from "@/lib/types";
 import { formatPrice, formatArea } from "@/lib/types";
 import type { ProjectDocument, DocumentCategory } from "@/lib/data/documents";
 import type { ProjectMilestone } from "@/lib/data/milestones";
@@ -74,7 +75,10 @@ export function AgentProjectDetailClient({ project, stock, milestones, documents
           <div className="absolute bottom-4 left-4 flex items-center gap-3">
             <ProjectLogo logoUrl={project.logo_url} name={project.name} size={32} />
             <div>
-              <h1 className="text-xl md:text-2xl font-bold text-white">{project.name}</h1>
+              <div className="flex items-center gap-2">
+                <h1 className="text-xl md:text-2xl font-bold text-white">{project.name}</h1>
+                <ProjectStatusBadge status={project.project_status as ProjectConstructionStatus | null} />
+              </div>
               <p className="text-white/80 text-sm">{project.address}</p>
             </div>
           </div>
@@ -84,7 +88,10 @@ export function AgentProjectDetailClient({ project, stock, milestones, documents
           <div className="flex items-center gap-3">
             <ProjectLogo logoUrl={project.logo_url} name={project.name} size={32} />
             <div>
-              <h1 className="text-2xl font-bold text-heading">{project.name}</h1>
+              <div className="flex items-center gap-2">
+                <h1 className="text-2xl font-bold text-heading">{project.name}</h1>
+                <ProjectStatusBadge status={project.project_status as ProjectConstructionStatus | null} />
+              </div>
               <p className="text-secondary text-sm mt-1">{project.address}</p>
             </div>
           </div>
@@ -106,6 +113,42 @@ export function AgentProjectDetailClient({ project, stock, milestones, documents
           </Card>
         ))}
       </div>
+
+      {/* Overview — only show fields with values (conditional rendering for agent portal) */}
+      {(project.development_type || project.description || (project.num_dwellings != null && project.num_dwellings > 0) || (project.num_commercial != null && project.num_commercial > 0) || (project.num_hotel_keys != null && project.num_hotel_keys > 0)) && (
+        <Card padding="md">
+          <h3 className="text-sm font-semibold text-secondary uppercase tracking-wider mb-3">Overview</h3>
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+            {project.development_type && (
+              <div>
+                <p className="text-xs text-secondary mb-0.5">Development Type</p>
+                <p className="text-sm font-medium text-heading">{project.development_type}</p>
+              </div>
+            )}
+            {(project.num_dwellings != null && project.num_dwellings > 0) && (
+              <div>
+                <p className="text-xs text-secondary mb-0.5">Dwellings</p>
+                <p className="text-sm font-bold font-mono text-heading">{project.num_dwellings}</p>
+              </div>
+            )}
+            {(project.num_commercial != null && project.num_commercial > 0) && (
+              <div>
+                <p className="text-xs text-secondary mb-0.5">Commercial</p>
+                <p className="text-sm font-bold font-mono text-heading">{project.num_commercial}</p>
+              </div>
+            )}
+            {(project.num_hotel_keys != null && project.num_hotel_keys > 0) && (
+              <div>
+                <p className="text-xs text-secondary mb-0.5">Hotel Keys</p>
+                <p className="text-sm font-bold font-mono text-heading">{project.num_hotel_keys}</p>
+              </div>
+            )}
+          </div>
+          {project.description && (
+            <p className="text-sm text-body mt-3 whitespace-pre-wrap">{project.description}</p>
+          )}
+        </Card>
+      )}
 
       {/* Tabs */}
       <div className="border-b border-border">

@@ -7,8 +7,18 @@ import { Button } from "@/components/Button";
 import { Card } from "@/components/Card";
 import { Modal } from "@/components/Modal";
 import { StatusBadge } from "@/components/StatusBadge";
+import { ProjectLogo } from "@/components/ProjectLogo";
 import { AgentForm } from "@/components/AgentForm";
-import { formatPrice, type AgentWithStats, type ProjectWithStats, type StockStatus } from "@/lib/types";
+import {
+  formatPrice,
+  type AgentWithStats,
+  type AgentProject,
+  type ProjectWithStats,
+  type StockStatus,
+  PROJECT_CONSTRUCTION_STATUS_LABELS,
+  PROJECT_CONSTRUCTION_STATUS_COLORS,
+  type ProjectConstructionStatus,
+} from "@/lib/types";
 
 interface StockRow {
   id: string;
@@ -25,13 +35,21 @@ interface Props {
   agent: AgentWithStats;
   projects: ProjectWithStats[];
   stock: StockRow[];
+  agentProjectCommissions: AgentProject[];
+  availableCount: number;
 }
 
-export function AgentDetailClient({ agent, projects, stock }: Props) {
+export function AgentDetailClient({ agent, projects, stock, agentProjectCommissions, availableCount }: Props) {
   const router = useRouter();
   const [showEditModal, setShowEditModal] = useState(false);
 
   const assignedProjects = projects.filter((p) => agent.assigned_projects.includes(p.id));
+
+  // Build commission map per project
+  const commissionMap = new Map<string, { type: string | null; rate: number | null }>();
+  for (const ap of agentProjectCommissions) {
+    commissionMap.set(ap.project_id, { type: ap.commission_type, rate: ap.commission_rate });
+  }
 
   return (
     <div className="p-6 md:p-8 max-w-5xl">
@@ -44,7 +62,6 @@ export function AgentDetailClient({ agent, projects, stock }: Props) {
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4 mb-8">
         <div className="flex items-center gap-4">
-          {/* Agent logo or initials */}
           {agent.logo_url ? (
             <img
               src={agent.logo_url}
@@ -84,10 +101,8 @@ export function AgentDetailClient({ agent, projects, stock }: Props) {
           <p className="text-2xl font-bold text-heading font-mono">{agent.assigned_projects.length}</p>
         </Card>
         <Card padding="sm">
-          <p className="text-xs text-secondary uppercase tracking-wider mb-1">Commission</p>
-          <p className="text-2xl font-bold text-heading font-mono">
-            {agent.commission_rate ? `${agent.commission_rate}${agent.commission_type === "percentage" ? "%" : ""}` : "—"}
-          </p>
+          <p className="text-xs text-[#1A9E6F] uppercase tracking-wider mb-1">Available for Sale</p>
+          <p className="text-2xl font-bold text-[#1A9E6F] font-mono">{availableCount}</p>
         </Card>
       </div>
 
@@ -170,19 +185,59 @@ export function AgentDetailClient({ agent, projects, stock }: Props) {
             </Card>
           )}
 
-          {/* Assigned Projects */}
+          {/* Assigned Projects — styled cards */}
           <Card>
             <h3 className="font-semibold text-heading mb-4">Projects</h3>
             {assignedProjects.length === 0 ? (
               <p className="text-sm text-secondary">No projects assigned</p>
             ) : (
-              <div className="space-y-2">
-                {assignedProjects.map((p) => (
-                  <Link key={p.id} href={`/projects/${p.id}`} className="block p-2 rounded-[var(--radius-input)] hover:bg-bg-alt transition-colors">
-                    <p className="font-medium text-heading text-sm">{p.name}</p>
-                    <p className="text-xs text-secondary">{p.suburb}, {p.state}</p>
-                  </Link>
-                ))}
+              <div className="space-y-3">
+                {assignedProjects.map((p) => {
+                  const comm = commissionMap.get(p.id);
+                  const ps = p.project_status as ProjectConstructionStatus | null;
+                  const statusColors = ps ? PROJECT_CONSTRUCTION_STATUS_COLORS[ps] : null;
+                  const statusLabel = ps ? PROJECT_CONSTRUCTION_STATUS_LABELS[ps] : null;
+
+                  return (
+                    <Link
+                      key={p.id}
+                      href={`/projects/${p.id}`}
+                      className="block rounded-[10px] border border-border hover:border-emerald-primary/30 p-3 transition-all hover:shadow-sm"
+                    >
+                      <div className="flex items-start gap-3">
+                        {p.logo_url ? (
+                          <img
+                            src={p.logo_url}
+                            alt={p.name}
+                            className="w-10 h-10 rounded-[8px] object-cover flex-shrink-0"
+                          />
+                        ) : (
+                          <div className="w-10 h-10 rounded-[8px] bg-emerald-primary/5 flex items-center justify-center text-emerald-primary font-semibold text-xs flex-shrink-0">
+                            {p.name.substring(0, 2).toUpperCase()}
+                          </div>
+                        )}
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center gap-2 mb-0.5">
+                            <p className="font-medium text-heading text-sm truncate">{p.name}</p>
+                            {statusLabel && statusColors && (
+                              <span className={`px-1.5 py-0.5 rounded-full text-[9px] font-semibold flex-shrink-0 ${statusColors.bg} ${statusColors.text}`}>
+                                {statusLabel}
+                              </span>
+                            )}
+                          </div>
+                          <p className="text-xs text-secondary truncate">
+                            {p.address}{p.suburb ? `, ${p.suburb}` : ""}
+                          </p>
+                          {comm && comm.rate != null && (
+                            <p className="text-xs font-mono text-[#D4A855] mt-1">
+                              Commission: {comm.type === "flat" ? formatPrice(comm.rate) : `${comm.rate}%`}
+                            </p>
+                          )}
+                        </div>
+                      </div>
+                    </Link>
+                  );
+                })}
               </div>
             )}
           </Card>
@@ -203,6 +258,7 @@ export function AgentDetailClient({ agent, projects, stock }: Props) {
           agent={agent}
           projects={projects}
           assignedProjectIds={agent.assigned_projects}
+          agentProjectCommissions={agentProjectCommissions}
           onSuccess={() => {
             setShowEditModal(false);
             router.refresh();

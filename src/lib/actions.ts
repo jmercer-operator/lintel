@@ -44,12 +44,22 @@ export async function createAgentAction(formData: FormData) {
 
   if (error) return { error: error.message };
 
-  // Assign to projects
+  // Assign to projects with per-project commission
   const projectIds = formData.getAll("project_ids") as string[];
   if (projectIds.length > 0 && agent) {
-    await supabase.from("agent_projects").insert(
-      projectIds.map((pid) => ({ agent_id: agent.id, project_id: pid }))
-    );
+    const rows = projectIds.map((pid) => {
+      const commType = (formData.get(`project_commission_type_${pid}`) as string) || null;
+      const commRate = formData.get(`project_commission_rate_${pid}`)
+        ? parseFloat(formData.get(`project_commission_rate_${pid}`) as string)
+        : null;
+      return {
+        agent_id: agent.id,
+        project_id: pid,
+        commission_type: commType,
+        commission_rate: commRate,
+      };
+    });
+    await supabase.from("agent_projects").insert(rows);
   }
 
   revalidatePath("/agents");
@@ -92,13 +102,23 @@ export async function updateAgentAction(formData: FormData) {
 
   if (error) return { error: error.message };
 
-  // Update project assignments
+  // Update project assignments with per-project commission
   const projectIds = formData.getAll("project_ids") as string[];
   await supabase.from("agent_projects").delete().eq("agent_id", id);
   if (projectIds.length > 0) {
-    await supabase.from("agent_projects").insert(
-      projectIds.map((pid) => ({ agent_id: id, project_id: pid }))
-    );
+    const rows = projectIds.map((pid) => {
+      const commType = (formData.get(`project_commission_type_${pid}`) as string) || null;
+      const commRate = formData.get(`project_commission_rate_${pid}`)
+        ? parseFloat(formData.get(`project_commission_rate_${pid}`) as string)
+        : null;
+      return {
+        agent_id: id,
+        project_id: pid,
+        commission_type: commType,
+        commission_rate: commRate,
+      };
+    });
+    await supabase.from("agent_projects").insert(rows);
   }
 
   revalidatePath("/agents");
@@ -338,6 +358,13 @@ export async function createProjectAction(formData: FormData) {
     return { error: "Name and address are required" };
   }
 
+  const project_status = (formData.get("project_status") as string) || null;
+  const development_type = (formData.get("development_type") as string) || null;
+  const num_dwellings = formData.get("num_dwellings") ? parseInt(formData.get("num_dwellings") as string) : null;
+  const num_commercial = formData.get("num_commercial") ? parseInt(formData.get("num_commercial") as string) : null;
+  const num_hotel_keys = formData.get("num_hotel_keys") ? parseInt(formData.get("num_hotel_keys") as string) : null;
+  const description = (formData.get("description") as string) || null;
+
   const { error } = await supabase
     .from("projects")
     .insert({
@@ -349,12 +376,54 @@ export async function createProjectAction(formData: FormData) {
       postcode: postcode || null,
       status: "active",
       total_lots: 0,
+      project_status,
+      development_type,
+      num_dwellings,
+      num_commercial,
+      num_hotel_keys,
+      description,
     });
 
   if (error) {
     return { error: error.message };
   }
 
+  revalidatePath("/projects");
+  revalidatePath("/");
+  return { success: true };
+}
+
+export async function updateProjectAction(formData: FormData) {
+  const supabase = await createClient();
+
+  const id = formData.get("id") as string;
+  if (!id) return { error: "Project ID is required" };
+
+  const name = formData.get("name") as string;
+  const address = formData.get("address") as string;
+  if (!name || !address) return { error: "Name and address are required" };
+
+  const { error } = await supabase
+    .from("projects")
+    .update({
+      name,
+      address,
+      suburb: (formData.get("suburb") as string) || null,
+      state: (formData.get("state") as string) || null,
+      postcode: (formData.get("postcode") as string) || null,
+      project_status: (formData.get("project_status") as string) || null,
+      development_type: (formData.get("development_type") as string) || null,
+      num_dwellings: formData.get("num_dwellings") ? parseInt(formData.get("num_dwellings") as string) : null,
+      num_commercial: formData.get("num_commercial") ? parseInt(formData.get("num_commercial") as string) : null,
+      num_hotel_keys: formData.get("num_hotel_keys") ? parseInt(formData.get("num_hotel_keys") as string) : null,
+      description: (formData.get("description") as string) || null,
+      updated_at: new Date().toISOString(),
+    })
+    .eq("id", id);
+
+  if (error) return { error: error.message };
+
+  revalidatePath(`/projects/${id}`);
   revalidatePath("/projects");
   revalidatePath("/");
   return { success: true };

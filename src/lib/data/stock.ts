@@ -1,6 +1,50 @@
 import { createClient } from "@/lib/supabase/server";
 import type { StockItem } from "@/lib/types";
 
+export interface StockWithProject extends StockItem {
+  project_name: string;
+  project_logo_url: string | null;
+}
+
+export async function getAllStock(filters?: {
+  projectId?: string;
+  status?: string;
+  agentId?: string;
+  search?: string;
+}): Promise<StockWithProject[]> {
+  const supabase = await createClient();
+
+  let query = supabase
+    .from("stock")
+    .select("*, projects:project_id(name, logo_url)")
+    .order("lot_number", { ascending: true });
+
+  if (filters?.projectId) {
+    query = query.eq("project_id", filters.projectId);
+  }
+  if (filters?.status && filters.status !== "All") {
+    query = query.eq("status", filters.status);
+  }
+  if (filters?.agentId) {
+    query = query.eq("agent_id", filters.agentId);
+  }
+  if (filters?.search) {
+    query = query.ilike("lot_number", `%${filters.search}%`);
+  }
+
+  const { data, error } = await query;
+  if (error) throw error;
+
+  return (data || []).map((item: Record<string, unknown>) => {
+    const projects = item.projects as { name: string; logo_url: string | null } | null;
+    return {
+      ...item,
+      project_name: projects?.name || "Unknown",
+      project_logo_url: projects?.logo_url || null,
+    } as StockWithProject;
+  });
+}
+
 export async function getStock(projectId: string, status?: string): Promise<StockItem[]> {
   const supabase = await createClient();
 

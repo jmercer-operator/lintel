@@ -8,21 +8,8 @@ import { Modal } from "@/components/Modal";
 import { NewProjectForm } from "@/components/NewProjectForm";
 import { StockSummaryBar } from "@/components/StockSummaryBar";
 import { ProjectLogo } from "@/components/ProjectLogo";
-import type { ProjectWithStats } from "@/lib/types";
-
-const projectStatusColors: Record<string, { bg: string; text: string }> = {
-  active: { bg: "bg-[#1A9E6F]/10", text: "text-[#1A9E6F]" },
-  completed: { bg: "bg-[#2D8C5A]/10", text: "text-[#2D8C5A]" },
-  on_hold: { bg: "bg-[#D4A855]/10", text: "text-[#D4A855]" },
-  archived: { bg: "bg-[#6B7A70]/10", text: "text-[#6B7A70]" },
-};
-
-const projectStatusLabels: Record<string, string> = {
-  active: "Active",
-  completed: "Completed",
-  on_hold: "On Hold",
-  archived: "Archived",
-};
+import { ProjectStatusBadge } from "@/components/ProjectStatusBadge";
+import type { ProjectWithStats, ProjectConstructionStatus } from "@/lib/types";
 
 interface ProjectsClientProps {
   projects: ProjectWithStats[];
@@ -52,54 +39,47 @@ export function ProjectsClient({ projects }: ProjectsClientProps) {
 
       {/* Project Cards Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4 lg:gap-6">
-        {projects.map((project) => {
-          const colors = projectStatusColors[project.status] || projectStatusColors.active;
-          const label = projectStatusLabels[project.status] || project.status;
-
-          return (
-            <Link key={project.id} href={`/projects/${project.id}`}>
-              <Card
-                padding="md"
-                className="hover:shadow-card-hover cursor-pointer transition-shadow h-full"
-              >
-                <div className="space-y-4">
-                  {/* Project name + status */}
-                  <div className="flex items-start justify-between gap-3">
-                    <div>
-                      <div className="flex items-center gap-2">
-                        <ProjectLogo logoUrl={project.logo_url} name={project.name} size={24} />
-                        <h3 className="text-base font-semibold text-heading">{project.name}</h3>
-                      </div>
-                      <p className="text-sm text-secondary mt-0.5">
-                        {project.address}
-                        {project.suburb && `, ${project.suburb}`}
-                        {project.state && ` ${project.state}`}
-                        {project.postcode && ` ${project.postcode}`}
-                      </p>
+        {projects.map((project) => (
+          <Link key={project.id} href={`/projects/${project.id}`}>
+            <Card
+              padding="md"
+              className="hover:shadow-card-hover cursor-pointer transition-shadow h-full"
+            >
+              <div className="space-y-4">
+                {/* Project name + status */}
+                <div className="flex items-start justify-between gap-3">
+                  <div>
+                    <div className="flex items-center gap-2">
+                      <ProjectLogo logoUrl={project.logo_url} name={project.name} size={24} />
+                      <h3 className="text-base font-semibold text-heading">{project.name}</h3>
                     </div>
-                    <span className={`inline-flex items-center px-2.5 py-1 rounded-full text-xs font-semibold flex-shrink-0 ${colors.bg} ${colors.text}`}>
-                      {label}
-                    </span>
+                    <p className="text-sm text-secondary mt-0.5">
+                      {project.address}
+                      {project.suburb && `, ${project.suburb}`}
+                      {project.state && ` ${project.state}`}
+                      {project.postcode && ` ${project.postcode}`}
+                    </p>
                   </div>
-
-                  {/* Stock count */}
-                  <div className="flex items-center justify-between text-sm">
-                    <span className="text-body">
-                      <span className="font-semibold text-heading">{project.stats.available}</span>
-                      <span className="text-secondary"> available</span>
-                      <span className="text-muted mx-1">/</span>
-                      <span className="font-mono text-heading">{project.stats.total}</span>
-                      <span className="text-secondary"> total</span>
-                    </span>
-                  </div>
-
-                  {/* Stock summary bar */}
-                  <StockSummaryBar stats={project.stats} />
+                  <ProjectStatusBadge status={project.project_status as ProjectConstructionStatus | null} />
                 </div>
-              </Card>
-            </Link>
-          );
-        })}
+
+                {/* Stock count */}
+                <div className="flex items-center justify-between text-sm">
+                  <span className="text-body">
+                    <span className="font-semibold text-heading">{project.stats.available}</span>
+                    <span className="text-secondary"> available</span>
+                    <span className="text-muted mx-1">/</span>
+                    <span className="font-mono text-heading">{project.stats.total}</span>
+                    <span className="text-secondary"> total</span>
+                  </span>
+                </div>
+
+                {/* Stock summary bar */}
+                <StockSummaryBar stats={project.stats} />
+              </div>
+            </Card>
+          </Link>
+        ))}
       </div>
 
       {projects.length === 0 && (
