@@ -1045,3 +1045,81 @@ Currently when agent tries to change status from Available, it just blocks with 
 - Build passes with zero errors
 - Commit message: "checkpoint 11: staff fixes + dashboard grouping"
 - Push to main
+
+## Checkpoint 12 — Real Authentication (CURRENT)
+
+### Database — ALREADY UPDATED (do NOT run SQL again)
+- user_profiles: added auth_user_id UUID UNIQUE
+- agents: added auth_user_id UUID UNIQUE
+- contacts: added auth_user_id UUID UNIQUE
+- Auth trigger: handle_new_user() auto-creates user_profile on signup
+
+### What to Build
+
+**1. Login page redesign:**
+- The login page already exists at /login — redesign it properly
+- Email + password form
+- LINTEL logo and branding (emerald, Outfit font)
+- "Sign In" button
+- Error messages for wrong credentials
+- Clean, centered card layout
+- No "Sign Up" link (accounts are created by staff only)
+- After login, redirect based on role:
+  - Staff → /
+  - Agent → /agent
+  - Client → /portal
+
+**2. Supabase Auth integration:**
+- Use Supabase Auth signInWithPassword
+- On successful login, look up the user in user_profiles, agents, and contacts tables by auth_user_id
+- Determine role:
+  - If found in user_profiles with role='staff' → staff
+  - If found in agents → agent
+  - If found in contacts → client
+- Store role in session/cookie for middleware
+
+**3. Re-enable auth middleware:**
+- In src/lib/supabase/middleware.ts — re-enable the auth gate (it was commented out for preview)
+- Protected routes:
+  - / and /dashboard/* → require staff role
+  - /agent/* → require agent role
+  - /portal → require client role (or staff for testing)
+  - /login → public (redirect to appropriate page if already logged in)
+  - /api/* → check auth header
+- Staff can access all three views (for testing/support)
+
+**4. Create initial auth users via Supabase Admin API:**
+- Create a server action or script that creates auth users and links them:
+  - Alex (staff): am@mproperty.melbourne
+  - Sarah Mitchell (agent): sarah.mitchell@example.com
+  - David Chen (client): david.chen@example.com
+- Use a secure default password that can be changed
+- Link auth_user_id in respective tables
+
+**5. Session management:**
+- Use Supabase SSR auth helpers (@supabase/ssr)
+- Server-side session validation in middleware
+- Refresh token handling
+- Sign out functionality (add to sidebar/topbar)
+
+**6. Role-aware data fetching:**
+- Staff: sees all data (current behavior)
+- Agent: sees only their assigned stock, their contacts, their projects
+- Client: sees only their linked lots and documents
+- Update server components to filter by authenticated user's role and ID
+
+**7. KEEP PREVIEW MODE:**
+- Add an env variable NEXT_PUBLIC_PREVIEW_MODE=true
+- When true, bypass auth (current behavior) — so you can still review without logging in
+- When false or absent, enforce auth
+- This lets us deploy with auth but still preview easily
+- Default for now: KEEP preview mode ON (set in .env)
+
+### IMPORTANT:
+- Use @supabase/ssr for Next.js App Router auth (not @supabase/auth-helpers-nextjs which is deprecated)
+- The Supabase client setup already exists at src/lib/supabase/ — update it
+- Do NOT break existing functionality — preview mode must still work
+- Password for test accounts: use "Lintel2026!" as default
+- Build passes with zero errors
+- Commit message: "checkpoint 12: real authentication"
+- Push to main
