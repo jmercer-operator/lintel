@@ -431,3 +431,74 @@ Seed data: 5 document categories, 7 milestones for Crossley & Bourke, 4 user pro
 - Build passes with zero errors
 - Commit message: "checkpoint 5a: documents & role system"
 - Push to main
+
+## Checkpoint 5b — Agent Portal (CURRENT)
+
+### Context
+The role system and permission helpers exist in `src/lib/auth/roles.ts`. Currently `getCurrentUserRole()` returns 'staff'. We need an agent portal experience — a separate layout that agents see.
+
+### What To Build
+
+1. **Agent portal layout** at `src/app/(agent)/layout.tsx`:
+   - Simpler sidebar than staff: only shows what agents can access
+   - Agent sidebar sections:
+     MY WORK: Dashboard, My Clients, My Lots
+     PROJECTS: (list of assigned projects)
+     RESOURCES: Documents
+   - Same TopBar but with agent's name/avatar
+   - Same BottomTabs but scoped: Dashboard, Clients, Lots, Docs, More
+   - Agent-themed: same brand colours but slightly different accent to distinguish from staff view
+
+2. **Agent Dashboard** (`src/app/(agent)/page.tsx`):
+   - Welcome message: "Welcome back, {agent.first_name}"
+   - 4 metric cards: My Active Lots, EOIs This Month, Under Contract, Commission (YTD)
+   - Recent activity: their recent lot status changes and new clients
+   - Quick actions: "Add Client", "Update Lot Status"
+
+3. **My Clients page** (`src/app/(agent)/clients/page.tsx`):
+   - List of contacts the agent has added/is referring
+   - Add new client button → same contact form but scoped
+   - Client cards with: name, linked lot, status, phone, email
+   - Click → client detail (same contact detail page but in agent layout)
+
+4. **My Lots page** (`src/app/(agent)/lots/page.tsx`):
+   - All stock items assigned to this agent across all projects
+   - Grouped by project
+   - Quick status change: dropdown on each lot to change status (Available → EOI → Under Contract → Exchanged)
+   - Agent CANNOT set status to "Settled" (that's staff only)
+
+5. **Project Documents (agent view)** (`src/app/(agent)/documents/page.tsx`):
+   - List assigned projects
+   - Click project → see documents with visibility='agent' or 'client' (NOT 'staff')
+   - Download buttons for each document
+   - NO upload or delete for project docs (agent can only upload client docs)
+
+6. **Agent project view** (`src/app/(agent)/projects/[id]/page.tsx`):
+   - Project overview: name, address, stock summary
+   - Stock table (only lots in this project)
+   - Documents tab (agent-visible docs only)
+   - Milestones tab (read-only view)
+
+7. **Role switcher** (for preview/demo purposes):
+   - Add a small toggle in the top bar that lets you switch between Staff / Agent / Client view
+   - Stores in localStorage
+   - `getCurrentUserRole()` reads from localStorage, defaults to 'staff'
+   - This lets Alex preview all three experiences from one URL
+   - Style: subtle pill toggle, not prominent
+
+8. **Middleware update**:
+   - When role is 'agent', redirect `/` to `/(agent)/` layout
+   - When role is 'staff', redirect `/` to `/(dashboard)/` layout (current)
+   - For now, the role switcher handles this client-side
+
+### IMPORTANT:
+- Agent portal is a SEPARATE layout group `(agent)` — do NOT modify existing `(dashboard)` layout
+- Agent can change lot status but NOT to "Settled"
+- Agent sees only their assigned projects and their own clients
+- Agent CANNOT see other agents' clients
+- For preview: use agent_id 'c0000000-0000-0000-0000-000000000001' (Sarah Mitchell) as default agent
+- Keep all existing staff pages working
+- Same brand colours, same components — just different navigation and scoped data
+- Build passes with zero errors
+- Commit message: "checkpoint 5b: agent portal"
+- Push to main
