@@ -128,23 +128,13 @@ export default function PortalClient({
             >
               Home
             </a>
-            <a
-              href="/portal/profile"
-              className="text-sm text-secondary hover:text-emerald-primary transition-colors font-medium"
-            >
-              Profile
-            </a>
             <RoleSwitcher />
-            <SignOutButton variant="minimal" />
-            <div className="flex items-center gap-2">
+            <a href="/portal/profile" className="cursor-pointer">
               <div className="w-8 h-8 rounded-full bg-emerald-primary flex items-center justify-center text-white text-xs font-semibold">
                 {contact.first_name[0]}
                 {contact.last_name[0]}
               </div>
-              <span className="hidden sm:block text-sm font-medium text-heading">
-                {displayName}
-              </span>
-            </div>
+            </a>
           </div>
         </div>
       </header>
