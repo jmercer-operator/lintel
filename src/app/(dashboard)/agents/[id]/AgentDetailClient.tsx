@@ -44,9 +44,18 @@ export function AgentDetailClient({ agent, projects, stock }: Props) {
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4 mb-8">
         <div className="flex items-center gap-4">
-          <div className="w-14 h-14 rounded-full bg-emerald-primary/10 flex items-center justify-center text-emerald-primary font-bold text-lg">
-            {agent.first_name[0]}{agent.last_name[0]}
-          </div>
+          {/* Agent logo or initials */}
+          {agent.logo_url ? (
+            <img
+              src={agent.logo_url}
+              alt={`${agent.first_name} ${agent.last_name}`}
+              className="w-16 h-16 rounded-[10px] object-cover"
+            />
+          ) : (
+            <div className="w-16 h-16 rounded-[10px] bg-emerald-primary/10 flex items-center justify-center text-emerald-primary font-bold text-xl">
+              {agent.first_name[0]}{agent.last_name[0]}
+            </div>
+          )}
           <div>
             <div className="flex items-center gap-3">
               <h1 className="text-2xl font-bold text-heading">{agent.first_name} {agent.last_name}</h1>
@@ -54,7 +63,7 @@ export function AgentDetailClient({ agent, projects, stock }: Props) {
                 agent.status === "active" ? "bg-[#1A9E6F]/10 text-[#1A9E6F]" : "bg-bg-alt text-secondary"
               }`}>{agent.status}</span>
             </div>
-            {agent.company && <p className="text-secondary text-sm">{agent.company}</p>}
+            {agent.agency && <p className="text-secondary text-sm">{agent.agency}</p>}
           </div>
         </div>
         <Button onClick={() => setShowEditModal(true)}>Edit Agent</Button>
@@ -145,10 +154,21 @@ export function AgentDetailClient({ agent, projects, stock }: Props) {
               <Detail label="Email" value={agent.email} />
               <Detail label="Phone" value={agent.phone} mono />
               {agent.secondary_phone && <Detail label="Alt Phone" value={agent.secondary_phone} mono />}
-              <Detail label="License" value={agent.license_number} mono />
-              {agent.license_expiry && <Detail label="Expiry" value={agent.license_expiry} />}
             </div>
           </Card>
+
+          {/* Address */}
+          {(agent.address_line_1 || agent.suburb) && (
+            <Card>
+              <h3 className="font-semibold text-heading mb-4">Address</h3>
+              <div className="text-sm text-body space-y-1">
+                {agent.address_line_1 && <p>{agent.address_line_1}</p>}
+                {agent.address_line_2 && <p>{agent.address_line_2}</p>}
+                <p>{[agent.suburb, agent.state, agent.postcode].filter(Boolean).join(", ")}</p>
+                {agent.country && agent.country !== "AU" && <p>{agent.country}</p>}
+              </div>
+            </Card>
+          )}
 
           {/* Assigned Projects */}
           <Card>

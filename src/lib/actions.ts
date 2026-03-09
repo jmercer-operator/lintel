@@ -27,13 +27,16 @@ export async function createAgentAction(formData: FormData) {
       email: (formData.get("email") as string) || null,
       phone: (formData.get("phone") as string) || null,
       secondary_phone: (formData.get("secondary_phone") as string) || null,
-      company: (formData.get("company") as string) || null,
       agency: (formData.get("agency") as string) || null,
-      license_number: (formData.get("license_number") as string) || null,
-      license_expiry: (formData.get("license_expiry") as string) || null,
       commission_type: (formData.get("commission_type") as string) || null,
       commission_rate: formData.get("commission_rate") ? parseFloat(formData.get("commission_rate") as string) : null,
       status: (formData.get("status") as string) || "active",
+      address_line_1: (formData.get("address_line_1") as string) || null,
+      address_line_2: (formData.get("address_line_2") as string) || null,
+      suburb: (formData.get("suburb") as string) || null,
+      state: (formData.get("state") as string) || null,
+      postcode: (formData.get("postcode") as string) || null,
+      country: (formData.get("country") as string) || "AU",
       notes: (formData.get("notes") as string) || null,
     })
     .select()
@@ -72,13 +75,16 @@ export async function updateAgentAction(formData: FormData) {
       email: (formData.get("email") as string) || null,
       phone: (formData.get("phone") as string) || null,
       secondary_phone: (formData.get("secondary_phone") as string) || null,
-      company: (formData.get("company") as string) || null,
       agency: (formData.get("agency") as string) || null,
-      license_number: (formData.get("license_number") as string) || null,
-      license_expiry: (formData.get("license_expiry") as string) || null,
       commission_type: (formData.get("commission_type") as string) || null,
       commission_rate: formData.get("commission_rate") ? parseFloat(formData.get("commission_rate") as string) : null,
       status: (formData.get("status") as string) || "active",
+      address_line_1: (formData.get("address_line_1") as string) || null,
+      address_line_2: (formData.get("address_line_2") as string) || null,
+      suburb: (formData.get("suburb") as string) || null,
+      state: (formData.get("state") as string) || null,
+      postcode: (formData.get("postcode") as string) || null,
+      country: (formData.get("country") as string) || "AU",
       notes: (formData.get("notes") as string) || null,
       updated_at: new Date().toISOString(),
     })
@@ -117,9 +123,27 @@ export async function createContactAction(formData: FormData) {
   const tagsRaw = formData.get("tags") as string;
   const tags = tagsRaw ? tagsRaw.split(",").map((t) => t.trim()).filter(Boolean) : [];
 
+  // Auto-tags based on buyer_type
+  const buyerType = (formData.get("buyer_type") as string) || null;
+  if (buyerType === "investor" && !tags.includes("investor")) tags.push("investor");
+  if (buyerType === "owner_occupier" && !tags.includes("owner-occupier")) tags.push("owner-occupier");
+  // Remove opposite tag if switching
+  if (buyerType === "investor") {
+    const idx = tags.indexOf("owner-occupier");
+    if (idx !== -1) tags.splice(idx, 1);
+  }
+  if (buyerType === "owner_occupier") {
+    const idx = tags.indexOf("investor");
+    if (idx !== -1) tags.splice(idx, 1);
+  }
+
+  const firbRequired = formData.get("firb_required") === "true" || formData.get("firb_required") === "on";
+
   const { error } = await supabase.from("contacts").insert({
     org_id: DEFAULT_ORG_ID,
     classification: (formData.get("classification") as string) || "prospect",
+    buyer_type: buyerType,
+    firb_required: firbRequired,
     first_name,
     last_name,
     preferred_name: (formData.get("preferred_name") as string) || null,
@@ -147,7 +171,6 @@ export async function createContactAction(formData: FormData) {
     postal_country: (formData.get("postal_country") as string) || null,
     employer: (formData.get("employer") as string) || null,
     occupation: (formData.get("occupation") as string) || null,
-    company: (formData.get("company") as string) || null,
     solicitor_name: (formData.get("solicitor_name") as string) || null,
     solicitor_firm: (formData.get("solicitor_firm") as string) || null,
     solicitor_email: (formData.get("solicitor_email") as string) || null,
@@ -185,10 +208,27 @@ export async function updateContactAction(formData: FormData) {
   const tagsRaw = formData.get("tags") as string;
   const tags = tagsRaw ? tagsRaw.split(",").map((t) => t.trim()).filter(Boolean) : [];
 
+  // Auto-tags based on buyer_type
+  const buyerType = (formData.get("buyer_type") as string) || null;
+  if (buyerType === "investor" && !tags.includes("investor")) tags.push("investor");
+  if (buyerType === "owner_occupier" && !tags.includes("owner-occupier")) tags.push("owner-occupier");
+  if (buyerType === "investor") {
+    const idx = tags.indexOf("owner-occupier");
+    if (idx !== -1) tags.splice(idx, 1);
+  }
+  if (buyerType === "owner_occupier") {
+    const idx = tags.indexOf("investor");
+    if (idx !== -1) tags.splice(idx, 1);
+  }
+
+  const firbRequired = formData.get("firb_required") === "true" || formData.get("firb_required") === "on";
+
   const { error } = await supabase
     .from("contacts")
     .update({
       classification: (formData.get("classification") as string) || "prospect",
+      buyer_type: buyerType,
+      firb_required: firbRequired,
       first_name,
       last_name,
       preferred_name: (formData.get("preferred_name") as string) || null,
@@ -216,7 +256,6 @@ export async function updateContactAction(formData: FormData) {
       postal_country: (formData.get("postal_country") as string) || null,
       employer: (formData.get("employer") as string) || null,
       occupation: (formData.get("occupation") as string) || null,
-      company: (formData.get("company") as string) || null,
       solicitor_name: (formData.get("solicitor_name") as string) || null,
       solicitor_firm: (formData.get("solicitor_firm") as string) || null,
       solicitor_email: (formData.get("solicitor_email") as string) || null,
@@ -418,8 +457,34 @@ export async function uploadProjectDocumentAction(formData: FormData) {
 
   if (dbError) return { error: dbError.message };
 
+  // Auto-set project logo/hero for special categories
+  const categoryName = formData.get("category_name") as string;
+  if (categoryName === "Project Logo") {
+    const { data: signedData } = await supabase.storage
+      .from("project-documents")
+      .createSignedUrl(filePath, 60 * 60 * 24 * 365);
+    if (signedData?.signedUrl) {
+      await supabase
+        .from("projects")
+        .update({ logo_url: signedData.signedUrl, updated_at: new Date().toISOString() })
+        .eq("id", project_id);
+    }
+  }
+  if (categoryName === "Hero Render") {
+    const { data: signedData } = await supabase.storage
+      .from("project-documents")
+      .createSignedUrl(filePath, 60 * 60 * 24 * 365);
+    if (signedData?.signedUrl) {
+      await supabase
+        .from("projects")
+        .update({ hero_render_url: signedData.signedUrl, updated_at: new Date().toISOString() })
+        .eq("id", project_id);
+    }
+  }
+
   revalidatePath(`/projects/${project_id}`);
   revalidatePath("/documents");
+  revalidatePath("/projects");
   return { success: true };
 }
 
@@ -503,6 +568,146 @@ export async function deleteClientDocumentAction(formData: FormData) {
   if (error) return { error: error.message };
 
   revalidatePath(`/contacts/${contact_id}`);
+  return { success: true };
+}
+
+/* ─── Contact-Stock Linking Actions ─── */
+
+export async function linkContactToStockAction(formData: FormData) {
+  const supabase = await createClient();
+
+  const contact_id = formData.get("contact_id") as string;
+  const stock_id = formData.get("stock_id") as string;
+  const project_id = formData.get("project_id") as string;
+
+  if (!contact_id || !stock_id || !project_id) {
+    return { error: "Contact, stock, and project are required" };
+  }
+
+  // Create the link
+  const { error: linkError } = await supabase.from("contact_stock").insert({
+    contact_id,
+    stock_id,
+    project_id,
+    role: "buyer",
+  });
+
+  if (linkError) {
+    if (linkError.message.includes("duplicate") || linkError.message.includes("unique")) {
+      return { error: "This contact is already linked to this lot" };
+    }
+    return { error: linkError.message };
+  }
+
+  // Auto-change stock status to EOI
+  await supabase
+    .from("stock")
+    .update({ status: "EOI", updated_at: new Date().toISOString() })
+    .eq("id", stock_id);
+
+  // Auto-add project slug tag to contact
+  const { data: project } = await supabase
+    .from("projects")
+    .select("name")
+    .eq("id", project_id)
+    .single();
+
+  if (project) {
+    const slug = project.name.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/(^-|-$)/g, "");
+    const { data: contact } = await supabase
+      .from("contacts")
+      .select("tags")
+      .eq("id", contact_id)
+      .single();
+
+    const currentTags: string[] = contact?.tags || [];
+    if (!currentTags.includes(slug)) {
+      await supabase
+        .from("contacts")
+        .update({ tags: [...currentTags, slug] })
+        .eq("id", contact_id);
+    }
+  }
+
+  revalidatePath(`/projects/${project_id}`);
+  revalidatePath(`/contacts/${contact_id}`);
+  revalidatePath("/contacts");
+  return { success: true };
+}
+
+/* ─── Multi-file Upload Action ─── */
+
+export async function uploadMultipleProjectDocumentsAction(formData: FormData) {
+  const supabase = await createClient();
+
+  const project_id = formData.get("project_id") as string;
+  const category_id = formData.get("category_id") as string;
+  const category_name = formData.get("category_name") as string;
+  const visibility = (formData.get("visibility") as DocumentVisibility) || "agent";
+  const files = formData.getAll("files") as File[];
+
+  if (!files.length || !project_id || !category_id) {
+    return { error: "Files, project, and category are required" };
+  }
+
+  for (const file of files) {
+    if (file.size > 50 * 1024 * 1024) {
+      return { error: `File "${file.name}" exceeds 50MB limit` };
+    }
+
+    const filePath = `${DEFAULT_ORG_ID}/${project_id}/${category_id}/${file.name}`;
+
+    const { error: uploadError } = await supabase.storage
+      .from("project-documents")
+      .upload(filePath, file, { upsert: true });
+
+    if (uploadError) return { error: uploadError.message };
+
+    const { error: dbError } = await supabase.from("project_documents").insert({
+      project_id,
+      org_id: DEFAULT_ORG_ID,
+      category_id,
+      file_name: file.name,
+      file_path: filePath,
+      file_size: file.size,
+      mime_type: file.type || "application/octet-stream",
+      visibility,
+      uploaded_by: null,
+    });
+
+    if (dbError) return { error: dbError.message };
+
+    // Auto-set project logo_url or hero_render_url for special categories
+    if (category_name === "Project Logo") {
+      const { data: signedData } = await supabase.storage
+        .from("project-documents")
+        .createSignedUrl(filePath, 60 * 60 * 24 * 365); // 1 year
+
+      if (signedData?.signedUrl) {
+        await supabase
+          .from("projects")
+          .update({ logo_url: signedData.signedUrl, updated_at: new Date().toISOString() })
+          .eq("id", project_id);
+      }
+    }
+
+    if (category_name === "Hero Render" && files.indexOf(file) === 0) {
+      const { data: signedData } = await supabase.storage
+        .from("project-documents")
+        .createSignedUrl(filePath, 60 * 60 * 24 * 365);
+
+      if (signedData?.signedUrl) {
+        await supabase
+          .from("projects")
+          .update({ hero_render_url: signedData.signedUrl, updated_at: new Date().toISOString() })
+          .eq("id", project_id);
+      }
+    }
+  }
+
+  revalidatePath(`/projects/${project_id}`);
+  revalidatePath("/documents");
+  revalidatePath("/projects");
   return { success: true };
 }
 

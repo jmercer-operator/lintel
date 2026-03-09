@@ -44,12 +44,20 @@ export function AgentsClient({ agents, projects }: Props) {
             <Card className="hover:border-emerald-primary/30 transition-all">
               <div className="flex items-start justify-between mb-3">
                 <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 rounded-full bg-emerald-primary/10 flex items-center justify-center text-emerald-primary font-semibold text-sm">
-                    {agent.first_name[0]}{agent.last_name[0]}
-                  </div>
+                  {agent.logo_url ? (
+                    <img
+                      src={agent.logo_url}
+                      alt={`${agent.first_name} ${agent.last_name}`}
+                      className="w-10 h-10 rounded-[8px] object-cover flex-shrink-0"
+                    />
+                  ) : (
+                    <div className="w-10 h-10 rounded-[8px] bg-emerald-primary/10 flex items-center justify-center text-emerald-primary font-semibold text-sm flex-shrink-0">
+                      {agent.first_name[0]}{agent.last_name[0]}
+                    </div>
+                  )}
                   <div>
                     <h3 className="font-semibold text-heading">{agent.first_name} {agent.last_name}</h3>
-                    {agent.company && <p className="text-xs text-secondary">{agent.company}</p>}
+                    {agent.agency && <p className="text-xs text-secondary">{agent.agency}</p>}
                   </div>
                 </div>
                 <span className={`px-2 py-0.5 rounded-full text-[10px] font-semibold uppercase ${
@@ -83,9 +91,7 @@ export function AgentsClient({ agents, projects }: Props) {
                   <p className="text-xs text-secondary font-mono">{agent.phone}</p>
                 </div>
               )}
-              {agent.license_number && (
-                <p className="text-[11px] text-muted mt-1">License: {agent.license_number}</p>
-              )}
+
             </Card>
           </div>
         ))}

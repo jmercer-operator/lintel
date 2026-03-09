@@ -59,16 +59,7 @@ export function AgentForm({ agent, projects, assignedProjectIds = [], onSuccess,
         <Input label="Phone" name="phone" defaultValue={agent?.phone || ""} />
       </div>
       <Input label="Secondary Phone" name="secondary_phone" defaultValue={agent?.secondary_phone || ""} />
-
-      <div className="grid grid-cols-2 gap-4">
-        <Input label="Company" name="company" defaultValue={agent?.company || ""} />
-        <Input label="Agency" name="agency" defaultValue={agent?.agency || ""} />
-      </div>
-
-      <div className="grid grid-cols-2 gap-4">
-        <Input label="License Number" name="license_number" defaultValue={agent?.license_number || ""} />
-        <Input label="License Expiry" name="license_expiry" type="date" defaultValue={agent?.license_expiry || ""} />
-      </div>
+      <Input label="Agency" name="agency" defaultValue={agent?.agency || ""} />
 
       <div className="grid grid-cols-2 gap-4">
         <div className="flex flex-col gap-1.5">
@@ -95,6 +86,17 @@ export function AgentForm({ agent, projects, assignedProjectIds = [], onSuccess,
           <option value="inactive">Inactive</option>
         </select>
       </div>
+
+      {/* Address Fields */}
+      <p className="text-xs font-semibold text-secondary uppercase tracking-wider pt-2">Address</p>
+      <Input label="Address Line 1" name="address_line_1" defaultValue={agent?.address_line_1 || ""} />
+      <Input label="Address Line 2" name="address_line_2" defaultValue={agent?.address_line_2 || ""} />
+      <div className="grid grid-cols-3 gap-4">
+        <Input label="Suburb" name="suburb" defaultValue={agent?.suburb || ""} />
+        <Input label="State" name="state" defaultValue={agent?.state || ""} />
+        <Input label="Postcode" name="postcode" defaultValue={agent?.postcode || ""} />
+      </div>
+      <Input label="Country" name="country" defaultValue={agent?.country || "AU"} />
 
       {/* Project Assignments */}
       <div className="flex flex-col gap-1.5">

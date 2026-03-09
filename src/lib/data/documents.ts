@@ -122,6 +122,41 @@ export async function getClientDocuments(contactId: string): Promise<ClientDocum
   return (data || []) as ClientDocument[];
 }
 
+export async function getClientDocumentsByProject(projectId: string): Promise<(ClientDocument & { contact_name: string })[]> {
+  const supabase = await createClient();
+
+  // Get contacts linked to stock in this project
+  const { data: contactStock } = await supabase
+    .from("contact_stock")
+    .select("contact_id")
+    .eq("project_id", projectId);
+
+  if (!contactStock || contactStock.length === 0) return [];
+
+  const contactIds = [...new Set(contactStock.map((cs) => cs.contact_id))];
+
+  const { data: docs, error } = await supabase
+    .from("client_documents")
+    .select("*")
+    .in("contact_id", contactIds)
+    .order("created_at", { ascending: false });
+
+  if (error) throw error;
+
+  // Get contact names
+  const { data: contacts } = await supabase
+    .from("contacts")
+    .select("id, first_name, last_name")
+    .in("id", contactIds);
+
+  const contactMap = new Map((contacts || []).map((c: { id: string; first_name: string; last_name: string }) => [c.id, `${c.first_name} ${c.last_name}`]));
+
+  return (docs || []).map((d) => ({
+    ...(d as ClientDocument),
+    contact_name: contactMap.get(d.contact_id) || "Unknown",
+  }));
+}
+
 export async function createSignedUrl(bucket: string, filePath: string): Promise<string | null> {
   const supabase = await createClient();
   const { data, error } = await supabase.storage
@@ -141,9 +176,9 @@ export function formatFileSize(bytes: number): string {
 export const CLIENT_DOCUMENT_TYPES = [
   "Signed Contract",
   "ID Document",
-  "Proof of Funds",
   "Solicitor Letter",
   "Deposit Receipt",
+  "FIRB",
   "Other",
 ] as const;
 

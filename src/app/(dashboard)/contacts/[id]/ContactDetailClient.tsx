@@ -8,8 +8,9 @@ import { Card } from "@/components/Card";
 import { Modal } from "@/components/Modal";
 import { StatusBadge } from "@/components/StatusBadge";
 import { ClassificationBadge } from "@/components/ClassificationBadge";
+import { BuyerTypeBadge, FirbBadge } from "@/components/BuyerTypeBadge";
 import { ContactForm } from "@/components/ContactForm";
-import { formatPrice, type ContactWithLinkedStock, type Agent, type StockStatus } from "@/lib/types";
+import { formatPrice, type ContactWithLinkedStock, type Agent, type StockStatus, type BuyerType } from "@/lib/types";
 import { ClientDocuments } from "@/components/ClientDocuments";
 import type { ClientDocument } from "@/components/ClientDocuments";
 
@@ -35,9 +36,11 @@ export function ContactDetailClient({ contact, agents, clientDocuments }: Props)
 
       <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4 mb-8">
         <div>
-          <div className="flex items-center gap-3 mb-1">
+          <div className="flex items-center gap-3 mb-1 flex-wrap">
             <h1 className="text-2xl font-bold text-heading">{contact.first_name} {contact.last_name}</h1>
             <ClassificationBadge classification={contact.computed_classification} />
+            <BuyerTypeBadge buyerType={contact.buyer_type as BuyerType | null} />
+            <FirbBadge required={contact.firb_required} />
           </div>
           {contact.preferred_name && (
             <p className="text-secondary text-sm">Goes by &ldquo;{contact.preferred_name}&rdquo;</p>
@@ -58,7 +61,7 @@ export function ContactDetailClient({ contact, agents, clientDocuments }: Props)
               <Detail label="Secondary Phone" value={contact.secondary_phone} mono />
               <Detail label="Date of Birth" value={contact.date_of_birth} />
               <Detail label="Nationality" value={contact.nationality} />
-              <Detail label="Country" value={contact.country_of_residence} />
+              <Detail label="FIRB Approval Required" value={contact.firb_required ? "Yes" : "No"} />
             </div>
           </Card>
 
@@ -84,7 +87,7 @@ export function ContactDetailClient({ contact, agents, clientDocuments }: Props)
             </Card>
           )}
 
-          {/* ID & Employment */}
+          {/* ID & Employment — removed Company */}
           {(contact.id_type || contact.employer || contact.occupation) && (
             <Card>
               <h3 className="font-semibold text-heading mb-4">ID &amp; Employment</h3>
@@ -95,7 +98,6 @@ export function ContactDetailClient({ contact, agents, clientDocuments }: Props)
                 <Detail label="ID Country" value={contact.id_country} />
                 <Detail label="Employer" value={contact.employer} />
                 <Detail label="Occupation" value={contact.occupation} />
-                <Detail label="Company" value={contact.company} />
               </div>
             </Card>
           )}
@@ -151,7 +153,7 @@ export function ContactDetailClient({ contact, agents, clientDocuments }: Props)
           </Card>
 
           {/* Client Documents */}
-          <ClientDocuments contactId={contact.id} documents={clientDocuments} />
+          <ClientDocuments contactId={contact.id} documents={clientDocuments} firbRequired={contact.firb_required} />
 
           {/* Activity Timeline Placeholder */}
           <Card>

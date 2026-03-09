@@ -33,6 +33,8 @@ export interface Project {
   total_lots: number;
   description: string | null;
   image_url: string | null;
+  logo_url: string | null;
+  hero_render_url: string | null;
   created_at: string;
   updated_at: string;
 }
@@ -129,6 +131,13 @@ export interface Agent {
   status: AgentStatus;
   notes: string | null;
   avatar_url: string | null;
+  address_line_1: string | null;
+  address_line_2: string | null;
+  suburb: string | null;
+  state: string | null;
+  postcode: string | null;
+  country: string | null;
+  logo_url: string | null;
   created_at: string;
   updated_at: string;
 }
@@ -140,10 +149,24 @@ export interface AgentWithStats extends Agent {
   total_value: number;
 }
 
+export type BuyerType = "owner_occupier" | "investor";
+
+export const BUYER_TYPE_LABELS: Record<BuyerType, string> = {
+  owner_occupier: "Owner Occupier",
+  investor: "Investor",
+};
+
+export const BUYER_TYPE_COLORS: Record<BuyerType, { bg: string; text: string }> = {
+  owner_occupier: { bg: "bg-[#1A9E6F]/10", text: "text-[#1A9E6F]" },
+  investor: { bg: "bg-[#7B3FA0]/10", text: "text-[#7B3FA0]" },
+};
+
 export interface Contact {
   id: string;
   org_id: string;
   classification: ContactClassification;
+  buyer_type: BuyerType | null;
+  firb_required: boolean;
   first_name: string;
   last_name: string;
   preferred_name: string | null;

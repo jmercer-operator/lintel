@@ -9,11 +9,13 @@ import { StatusBadge } from "@/components/StatusBadge";
 import { Modal } from "@/components/Modal";
 import { StockForm } from "@/components/StockForm";
 import { DocumentsTab } from "@/components/DocumentsTab";
-import type { DocumentCategory, ProjectDocument } from "@/components/DocumentsTab";
+import type { DocumentCategory, ProjectDocument, ClientDocForProject } from "@/components/DocumentsTab";
 import { MilestonesTab } from "@/components/MilestonesTab";
 import type { ProjectMilestone } from "@/components/MilestonesTab";
+import { ProjectLogo } from "@/components/ProjectLogo";
+import { ReserveLotModal } from "@/components/ReserveLotModal";
 import { ALL_STATUSES, formatPrice, formatArea, timeAgo } from "@/lib/types";
-import type { ProjectWithStats, StockItem, StockStatus, Agent } from "@/lib/types";
+import type { ProjectWithStats, StockItem, StockStatus, Agent, ContactWithLinkedStock } from "@/lib/types";
 
 type TabKey = "stock" | "documents" | "milestones";
 
@@ -22,10 +24,13 @@ interface ProjectDetailClientProps {
   stock: StockItem[];
   statusFilter: string;
   agents?: Agent[];
+  contacts?: ContactWithLinkedStock[];
   categories: DocumentCategory[];
   documents: ProjectDocument[];
+  clientDocuments?: ClientDocForProject[];
   milestones: ProjectMilestone[];
   activeTab: TabKey;
+  stockContactMap?: Record<string, string>; // stock_id → contact name
 }
 
 const metricConfig = [
@@ -47,15 +52,19 @@ export function ProjectDetailClient({
   stock,
   statusFilter,
   agents,
+  contacts,
   categories,
   documents,
+  clientDocuments,
   milestones,
   activeTab,
+  stockContactMap = {},
 }: ProjectDetailClientProps) {
   const router = useRouter();
   const searchParams = useSearchParams();
   const [showAddStock, setShowAddStock] = useState(false);
   const [editingStock, setEditingStock] = useState<StockItem | null>(null);
+  const [reservingStock, setReservingStock] = useState<StockItem | null>(null);
 
   function handleStatusChange(value: string) {
     const params = new URLSearchParams(searchParams.toString());
@@ -91,7 +100,10 @@ export function ProjectDetailClient({
         </Link>
         <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
           <div>
-            <h1 className="text-2xl font-bold text-heading">{project.name}</h1>
+            <div className="flex items-center gap-3">
+              <ProjectLogo logoUrl={project.logo_url} name={project.name} size={32} />
+              <h1 className="text-2xl font-bold text-heading">{project.name}</h1>
+            </div>
             <p className="text-secondary text-sm mt-1">
               {project.address}
               {project.suburb && `, ${project.suburb}`}
@@ -155,6 +167,8 @@ export function ProjectDetailClient({
           statusFilter={statusFilter}
           onStatusChange={handleStatusChange}
           onEditStock={setEditingStock}
+          onReserveStock={setReservingStock}
+          stockContactMap={stockContactMap}
         />
       )}
 
@@ -163,6 +177,7 @@ export function ProjectDetailClient({
           projectId={project.id}
           categories={categories}
           documents={documents}
+          clientDocuments={clientDocuments}
         />
       )}
 
@@ -205,6 +220,18 @@ export function ProjectDetailClient({
           />
         )}
       </Modal>
+
+      {/* Reserve Lot Modal */}
+      {reservingStock && (
+        <ReserveLotModal
+          open={!!reservingStock}
+          onClose={() => setReservingStock(null)}
+          stock={reservingStock}
+          projectId={project.id}
+          agents={agents || []}
+          contacts={contacts || []}
+        />
+      )}
     </div>
   );
 }
@@ -217,12 +244,16 @@ function StockTab({
   statusFilter,
   onStatusChange,
   onEditStock,
+  onReserveStock,
+  stockContactMap,
 }: {
   project: ProjectWithStats;
   stock: StockItem[];
   statusFilter: string;
   onStatusChange: (v: string) => void;
   onEditStock: (s: StockItem) => void;
+  onReserveStock: (s: StockItem) => void;
+  stockContactMap: Record<string, string>;
 }) {
   return (
     <Card padding="sm">
@@ -250,7 +281,7 @@ function StockTab({
         </div>
       </div>
       <div className="overflow-x-auto">
-        <table className="w-full min-w-[900px]">
+        <table className="w-full min-w-[1000px]">
           <thead>
             <tr className="border-b border-border">
               <th className="px-4 sm:px-6 py-3 text-left text-xs font-semibold text-muted uppercase tracking-wider">Lot</th>
@@ -261,18 +292,23 @@ function StockTab({
               <th className="px-4 sm:px-6 py-3 text-right text-xs font-semibold text-muted uppercase tracking-wider">m² Ext</th>
               <th className="px-4 sm:px-6 py-3 text-left text-xs font-semibold text-muted uppercase tracking-wider">Price</th>
               <th className="px-4 sm:px-6 py-3 text-left text-xs font-semibold text-muted uppercase tracking-wider">Status</th>
+              <th className="px-4 sm:px-6 py-3 text-left text-xs font-semibold text-muted uppercase tracking-wider">Customer</th>
               <th className="px-4 sm:px-6 py-3 text-left text-xs font-semibold text-muted uppercase tracking-wider">Agent</th>
-              <th className="px-4 sm:px-6 py-3 text-left text-xs font-semibold text-muted uppercase tracking-wider">Updated</th>
+              <th className="px-4 sm:px-6 py-3 text-left text-xs font-semibold text-muted uppercase tracking-wider">Actions</th>
             </tr>
           </thead>
           <tbody>
             {stock.map((row) => (
               <tr
                 key={row.id}
-                onClick={() => onEditStock(row)}
-                className="border-b border-border last:border-0 hover:bg-bg-alt transition-colors cursor-pointer"
+                className="border-b border-border last:border-0 hover:bg-bg-alt transition-colors"
               >
-                <td className="px-4 sm:px-6 py-3.5 text-sm font-mono font-semibold text-heading">{row.lot_number}</td>
+                <td
+                  className="px-4 sm:px-6 py-3.5 text-sm font-mono font-semibold text-heading cursor-pointer"
+                  onClick={() => onEditStock(row)}
+                >
+                  {row.lot_number}
+                </td>
                 <td className="px-4 sm:px-6 py-3.5 text-sm font-mono text-center text-body">{row.bedrooms}</td>
                 <td className="px-4 sm:px-6 py-3.5 text-sm font-mono text-center text-body">{row.bathrooms}</td>
                 <td className="px-4 sm:px-6 py-3.5 text-sm font-mono text-center text-body">{row.car_spaces}</td>
@@ -282,13 +318,30 @@ function StockTab({
                 <td className="px-4 sm:px-6 py-3.5">
                   <StatusBadge status={row.status as StockStatus} />
                 </td>
+                <td className="px-4 sm:px-6 py-3.5 text-sm text-body">
+                  {stockContactMap[row.id] ? (
+                    <span className="text-emerald-primary font-medium">{stockContactMap[row.id]}</span>
+                  ) : "—"}
+                </td>
                 <td className="px-4 sm:px-6 py-3.5 text-sm text-body">{row.agent_name || "—"}</td>
-                <td className="px-4 sm:px-6 py-3.5 text-sm text-secondary">{timeAgo(row.updated_at)}</td>
+                <td className="px-4 sm:px-6 py-3.5">
+                  {row.status === "Available" && (
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        onReserveStock(row);
+                      }}
+                      className="px-3 py-1.5 text-xs font-semibold rounded-[var(--radius-button)] bg-emerald-primary/10 text-emerald-primary hover:bg-emerald-primary/20 transition-colors cursor-pointer"
+                    >
+                      Reserve
+                    </button>
+                  )}
+                </td>
               </tr>
             ))}
             {stock.length === 0 && (
               <tr>
-                <td colSpan={10} className="px-6 py-12 text-center text-secondary text-sm">
+                <td colSpan={11} className="px-6 py-12 text-center text-secondary text-sm">
                   No lots found{statusFilter !== "All" ? ` with status "${statusFilter}"` : ""}. Click &quot;Add Lot&quot; to create one.
                 </td>
               </tr>

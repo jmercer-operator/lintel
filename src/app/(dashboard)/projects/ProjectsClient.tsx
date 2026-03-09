@@ -7,6 +7,7 @@ import { Button } from "@/components/Button";
 import { Modal } from "@/components/Modal";
 import { NewProjectForm } from "@/components/NewProjectForm";
 import { StockSummaryBar } from "@/components/StockSummaryBar";
+import { ProjectLogo } from "@/components/ProjectLogo";
 import type { ProjectWithStats } from "@/lib/types";
 
 const projectStatusColors: Record<string, { bg: string; text: string }> = {
@@ -65,7 +66,10 @@ export function ProjectsClient({ projects }: ProjectsClientProps) {
                   {/* Project name + status */}
                   <div className="flex items-start justify-between gap-3">
                     <div>
-                      <h3 className="text-base font-semibold text-heading">{project.name}</h3>
+                      <div className="flex items-center gap-2">
+                        <ProjectLogo logoUrl={project.logo_url} name={project.name} size={24} />
+                        <h3 className="text-base font-semibold text-heading">{project.name}</h3>
+                      </div>
                       <p className="text-sm text-secondary mt-0.5">
                         {project.address}
                         {project.suburb && `, ${project.suburb}`}

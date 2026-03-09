@@ -27,9 +27,9 @@ export interface ClientDocument {
 const CLIENT_DOCUMENT_TYPES = [
   "Signed Contract",
   "ID Document",
-  "Proof of Funds",
   "Solicitor Letter",
   "Deposit Receipt",
+  "FIRB",
   "Other",
 ] as const;
 
@@ -42,16 +42,20 @@ function formatFileSize(bytes: number): string {
 interface Props {
   contactId: string;
   documents: ClientDocument[];
+  firbRequired?: boolean;
 }
 
-export function ClientDocuments({ contactId, documents }: Props) {
+export function ClientDocuments({ contactId, documents, firbRequired = false }: Props) {
   const router = useRouter();
   const role = getCurrentUserRole();
   const fileInputRef = useRef<HTMLInputElement | null>(null);
   const [uploading, setUploading] = useState(false);
   const [deleting, setDeleting] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
-  const [selectedType, setSelectedType] = useState<string>(CLIENT_DOCUMENT_TYPES[0]);
+  const availableDocTypes = firbRequired
+    ? CLIENT_DOCUMENT_TYPES
+    : CLIENT_DOCUMENT_TYPES.filter(t => t !== "FIRB");
+  const [selectedType, setSelectedType] = useState<string>(availableDocTypes[0]);
 
   async function handleUpload(file: File) {
     setUploading(true);
@@ -124,7 +128,7 @@ export function ClientDocuments({ contactId, documents }: Props) {
               onChange={(e) => setSelectedType(e.target.value)}
               className="text-xs px-2 py-1.5 rounded-[var(--radius-input)] border border-border bg-white text-body"
             >
-              {CLIENT_DOCUMENT_TYPES.map((t) => (
+              {availableDocTypes.map((t) => (
                 <option key={t} value={t}>{t}</option>
               ))}
             </select>

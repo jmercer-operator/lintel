@@ -9,7 +9,8 @@ import { Modal } from "@/components/Modal";
 import { ClassificationBadge } from "@/components/ClassificationBadge";
 import { ContactForm } from "@/components/ContactForm";
 import { createContactAction } from "@/lib/actions";
-import { timeAgo, type ContactWithLinkedStock, type Agent, type ProjectWithStats } from "@/lib/types";
+import { BuyerTypeBadge } from "@/components/BuyerTypeBadge";
+import { timeAgo, type ContactWithLinkedStock, type Agent, type ProjectWithStats, type BuyerType } from "@/lib/types";
 
 interface Props {
   contacts: ContactWithLinkedStock[];
@@ -140,6 +141,7 @@ export function ContactsClient({ contacts, agents, projects, currentTab, searchQ
                 <th className="text-left px-4 py-3 font-semibold text-secondary text-xs uppercase tracking-wider hidden md:table-cell">Email</th>
                 <th className="text-left px-4 py-3 font-semibold text-secondary text-xs uppercase tracking-wider hidden lg:table-cell">Phone</th>
                 <th className="text-left px-4 py-3 font-semibold text-secondary text-xs uppercase tracking-wider">Type</th>
+                <th className="text-left px-4 py-3 font-semibold text-secondary text-xs uppercase tracking-wider hidden lg:table-cell">Buyer</th>
                 <th className="text-left px-4 py-3 font-semibold text-secondary text-xs uppercase tracking-wider hidden lg:table-cell">Source</th>
                 <th className="text-left px-4 py-3 font-semibold text-secondary text-xs uppercase tracking-wider hidden xl:table-cell">Lots</th>
                 <th className="text-left px-4 py-3 font-semibold text-secondary text-xs uppercase tracking-wider hidden xl:table-cell">Tags</th>
@@ -149,7 +151,7 @@ export function ContactsClient({ contacts, agents, projects, currentTab, searchQ
             <tbody>
               {contacts.length === 0 ? (
                 <tr>
-                  <td colSpan={8} className="px-4 py-12 text-center text-secondary">
+                  <td colSpan={9} className="px-4 py-12 text-center text-secondary">
                     No contacts found
                   </td>
                 </tr>
@@ -167,6 +169,9 @@ export function ContactsClient({ contacts, agents, projects, currentTab, searchQ
                     <td className="px-4 py-3 text-secondary hidden lg:table-cell font-mono text-xs">{contact.phone || "—"}</td>
                     <td className="px-4 py-3">
                       <ClassificationBadge classification={contact.computed_classification} />
+                    </td>
+                    <td className="px-4 py-3 hidden lg:table-cell">
+                      <BuyerTypeBadge buyerType={contact.buyer_type as BuyerType | null} />
                     </td>
                     <td className="px-4 py-3 text-secondary capitalize hidden lg:table-cell">{contact.source || "—"}</td>
                     <td className="px-4 py-3 text-secondary hidden xl:table-cell">
