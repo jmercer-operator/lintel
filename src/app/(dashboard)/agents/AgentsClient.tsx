@@ -58,7 +58,7 @@ export function AgentsClient({ agents, projects }: Props) {
                   }`}>{agent.status}</span>
                 </div>
                 <p className="text-sm text-secondary truncate">
-                  {[agent.agency, agent.phone, agent.email].filter(Boolean).join(" · ")}
+                  {[agent.agency, agent.phone, agent.email].filter(Boolean).join(" · ") || "—"}
                 </p>
               </div>
               <div className="hidden sm:flex items-center gap-6 text-center flex-shrink-0">

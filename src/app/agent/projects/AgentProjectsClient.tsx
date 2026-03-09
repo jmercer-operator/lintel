@@ -54,7 +54,7 @@ export function AgentProjectsClient({ projects }: Props) {
                     {project.suburb && `, ${project.suburb}`}
                   </p>
                   <StockSummaryBar stats={project.stats} />
-                  <p className="text-[10px] text-muted mt-1.5">{project.stats.total} lots</p>
+                  <p className="text-[10px] text-muted mt-1.5">{project.stats.total} lot{project.stats.total !== 1 ? "s" : ""}</p>
                 </div>
               </Card>
             </Link>

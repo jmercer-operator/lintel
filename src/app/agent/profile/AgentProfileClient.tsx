@@ -136,7 +136,7 @@ export function AgentProfileClient({ agent, projects }: Props) {
             {projects.map((p) => (
               <div key={p.id} className="flex items-center justify-between py-2 border-b border-border last:border-0">
                 <span className="text-sm text-heading font-medium">{p.name}</span>
-                <span className="text-xs text-muted">{p.stats.total} lots</span>
+                <span className="text-xs text-muted">{p.stats.total} lot{p.stats.total !== 1 ? "s" : ""}</span>
               </div>
             ))}
           </div>
