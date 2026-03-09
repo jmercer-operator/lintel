@@ -1,5 +1,5 @@
 import { PREVIEW_AGENT_ID } from "@/lib/auth/roles";
-import { getAgent } from "@/lib/data/agents";
+import { getAgent, getAgents } from "@/lib/data/agents";
 import { getAgentStockStats, getAgentClients, getAgentStock } from "@/lib/data/agent-portal";
 import { AgentDashboardClient } from "./AgentDashboardClient";
 
@@ -8,6 +8,7 @@ export default async function AgentDashboardPage() {
   const stats = await getAgentStockStats(PREVIEW_AGENT_ID);
   const clients = await getAgentClients(PREVIEW_AGENT_ID);
   const stock = await getAgentStock(PREVIEW_AGENT_ID);
+  const agents = await getAgents();
 
   // Recent activity: last 5 lots updated
   const recentLots = [...stock]
@@ -20,6 +21,8 @@ export default async function AgentDashboardPage() {
       stats={stats}
       clientCount={clients.length}
       recentLots={recentLots}
+      agents={agents}
+      agentId={PREVIEW_AGENT_ID}
     />
   );
 }

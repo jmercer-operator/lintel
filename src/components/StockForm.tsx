@@ -146,6 +146,31 @@ export function StockForm({ projectId, stock, agents, onSuccess, onCancel }: Sto
         />
       </div>
 
+      {/* Commission fields (staff only) */}
+      <div className="grid grid-cols-2 gap-4">
+        <div className="flex flex-col gap-1.5">
+          <label className="text-sm font-medium text-heading">Commission Type</label>
+          <select
+            name="commission_type"
+            defaultValue={stock?.commission_type || ""}
+            className="w-full px-3.5 py-2.5 rounded-[var(--radius-input)] border border-border bg-white text-body text-sm hover:border-secondary focus:border-emerald-primary focus:ring-1 focus:ring-emerald-primary focus:outline-none transition-colors cursor-pointer"
+          >
+            <option value="">None</option>
+            <option value="percentage">Percentage (%)</option>
+            <option value="flat">Flat ($)</option>
+          </select>
+        </div>
+        <Input
+          label="Commission Rate"
+          name="commission_rate"
+          type="number"
+          min={0}
+          step="0.01"
+          defaultValue={stock?.commission_rate ?? ""}
+          placeholder="e.g. 2.5"
+        />
+      </div>
+
       {agents && agents.length > 0 ? (
         <div className="flex flex-col gap-1.5">
           <label className="text-sm font-medium text-heading">Agent</label>

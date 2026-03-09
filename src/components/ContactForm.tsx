@@ -13,6 +13,7 @@ interface ContactFormProps {
   onCancel: () => void;
   defaultStockId?: string;
   defaultProjectId?: string;
+  defaultAgentId?: string;
 }
 
 const TABS = ["Personal", "Address", "ID & Employment", "Legal", "Preferences"] as const;
@@ -20,7 +21,7 @@ const TABS = ["Personal", "Address", "ID & Employment", "Legal", "Preferences"] 
 const ID_TYPES = ["passport", "drivers_license", "national_id", "other"];
 const CONTACT_METHODS = ["email", "phone", "sms", "whatsapp"];
 
-export function ContactForm({ contact, agents, onSuccess, onCancel, defaultStockId, defaultProjectId }: ContactFormProps) {
+export function ContactForm({ contact, agents, onSuccess, onCancel, defaultStockId, defaultProjectId, defaultAgentId }: ContactFormProps) {
   const [isPending, startTransition] = useTransition();
   const [error, setError] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState(0);
@@ -28,14 +29,15 @@ export function ContactForm({ contact, agents, onSuccess, onCancel, defaultStock
   // Source agent autocomplete state
   const [sourceType, setSourceType] = useState<string>(() => {
     if (contact?.source === "direct_marketing") return "direct_marketing";
-    if (contact?.referring_agent_id) return "agent";
+    if (contact?.referring_agent_id || defaultAgentId) return "agent";
     return contact?.source || "";
   });
   const [agentSearch, setAgentSearch] = useState("");
-  const [selectedAgentId, setSelectedAgentId] = useState<string>(contact?.referring_agent_id || "");
+  const [selectedAgentId, setSelectedAgentId] = useState<string>(contact?.referring_agent_id || defaultAgentId || "");
   const [selectedAgentName, setSelectedAgentName] = useState<string>(() => {
-    if (contact?.referring_agent_id) {
-      const a = agents.find(ag => ag.id === contact.referring_agent_id);
+    const refId = contact?.referring_agent_id || defaultAgentId;
+    if (refId) {
+      const a = agents.find(ag => ag.id === refId);
       return a ? `${a.first_name} ${a.last_name}` : "";
     }
     return "";

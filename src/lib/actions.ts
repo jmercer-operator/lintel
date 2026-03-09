@@ -329,6 +329,8 @@ export async function createStockAction(formData: FormData) {
   const aspect = (formData.get("aspect") as string) || null;
   const agent_name = (formData.get("agent_name") as string) || null;
   const notes = (formData.get("notes") as string) || null;
+  const commission_type = (formData.get("commission_type") as string) || null;
+  const commission_rate = formData.get("commission_rate") ? parseFloat(formData.get("commission_rate") as string) : null;
 
   if (!lot_number || !project_id) {
     return { error: "Lot number and project are required" };
@@ -351,6 +353,8 @@ export async function createStockAction(formData: FormData) {
       aspect,
       agent_name,
       notes,
+      commission_type,
+      commission_rate,
     });
 
   if (error) {
@@ -384,6 +388,9 @@ export async function updateStockAction(formData: FormData) {
   const agent_name = (formData.get("agent_name") as string) || null;
   const notes = (formData.get("notes") as string) || null;
 
+  const commission_type_upd = (formData.get("commission_type") as string) || null;
+  const commission_rate_upd = formData.get("commission_rate") ? parseFloat(formData.get("commission_rate") as string) : null;
+
   if (!id || !lot_number) {
     return { error: "ID and lot number are required" };
   }
@@ -403,6 +410,8 @@ export async function updateStockAction(formData: FormData) {
       aspect,
       agent_name,
       notes,
+      commission_type: commission_type_upd,
+      commission_rate: commission_rate_upd,
       updated_at: new Date().toISOString(),
     })
     .eq("id", id);

@@ -1,19 +1,28 @@
 "use client";
 
+import { useState } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { Card } from "@/components/Card";
 import { StatusBadge } from "@/components/StatusBadge";
-import type { StockItem, StockStats, StockStatus } from "@/lib/types";
+import { Modal } from "@/components/Modal";
+import { ContactForm } from "@/components/ContactForm";
+import type { StockItem, StockStats, StockStatus, Agent } from "@/lib/types";
 import { formatPrice, timeAgo } from "@/lib/types";
 
 interface Props {
   agentName: string;
-  stats: StockStats & { commission_ytd: number };
+  stats: StockStats & { activeLots: number; allLots: number };
   clientCount: number;
   recentLots: (StockItem & { project_name: string })[];
+  agents: Agent[];
+  agentId: string;
 }
 
-export function AgentDashboardClient({ agentName, stats, clientCount, recentLots }: Props) {
+export function AgentDashboardClient({ agentName, stats, clientCount, recentLots, agents, agentId }: Props) {
+  const [showAddClient, setShowAddClient] = useState(false);
+  const router = useRouter();
+
   return (
     <div className="space-y-8">
       {/* Welcome */}
@@ -24,14 +33,15 @@ export function AgentDashboardClient({ agentName, stats, clientCount, recentLots
         <p className="text-secondary mt-1">Here&apos;s your activity overview</p>
       </div>
 
-      {/* Metric Cards */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+      {/* Metric Cards — 5 total */}
+      <div className="grid grid-cols-2 lg:grid-cols-5 gap-4">
         <Card padding="md">
-          <p className="text-xs font-semibold text-muted uppercase tracking-wider mb-1">My Active Lots</p>
-          <p className="text-3xl font-bold text-heading font-mono">{stats.total}</p>
+          <p className="text-xs font-semibold text-muted uppercase tracking-wider mb-1">Active Lots</p>
+          <p className="text-3xl font-bold text-heading font-mono">{stats.activeLots}</p>
+          <p className="text-[10px] text-muted mt-0.5">Available + EOI</p>
         </Card>
         <Card padding="md">
-          <p className="text-xs font-semibold text-muted uppercase tracking-wider mb-1">EOIs This Month</p>
+          <p className="text-xs font-semibold text-muted uppercase tracking-wider mb-1">EOIs</p>
           <p className="text-3xl font-bold text-[#D4A855] font-mono">{stats.eoi}</p>
         </Card>
         <Card padding="md">
@@ -39,18 +49,21 @@ export function AgentDashboardClient({ agentName, stats, clientCount, recentLots
           <p className="text-3xl font-bold text-[#7B3FA0] font-mono">{stats.underContract}</p>
         </Card>
         <Card padding="md">
-          <p className="text-xs font-semibold text-muted uppercase tracking-wider mb-1">Commission (YTD)</p>
-          <p className="text-3xl font-bold text-emerald-primary font-mono">
-            {formatPrice(stats.commission_ytd)}
-          </p>
+          <p className="text-xs font-semibold text-muted uppercase tracking-wider mb-1">All Lots</p>
+          <p className="text-3xl font-bold text-emerald-primary font-mono">{stats.allLots}</p>
+          <p className="text-[10px] text-muted mt-0.5">Total allocated</p>
+        </Card>
+        <Card padding="md">
+          <p className="text-xs font-semibold text-muted uppercase tracking-wider mb-1">Settled</p>
+          <p className="text-3xl font-bold text-[#2D8C5A] font-mono">{stats.settled}</p>
         </Card>
       </div>
 
       {/* Quick Actions */}
       <div className="flex flex-wrap gap-3">
-        <Link
-          href="/agent/clients"
-          className="inline-flex items-center gap-2 px-4 py-2.5 bg-emerald-primary text-white rounded-[var(--radius-button)] text-sm font-semibold hover:bg-emerald-dark transition-colors"
+        <button
+          onClick={() => setShowAddClient(true)}
+          className="inline-flex items-center gap-2 px-4 py-2.5 bg-emerald-primary text-white rounded-[var(--radius-button)] text-sm font-semibold hover:bg-emerald-dark transition-colors cursor-pointer"
         >
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
             <path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" />
@@ -59,7 +72,7 @@ export function AgentDashboardClient({ agentName, stats, clientCount, recentLots
             <line x1="23" y1="11" x2="17" y2="11" />
           </svg>
           Add Client
-        </Link>
+        </button>
         <Link
           href="/agent/lots"
           className="inline-flex items-center gap-2 px-4 py-2.5 bg-white text-heading border border-border rounded-[var(--radius-button)] text-sm font-semibold hover:bg-bg-alt transition-colors"
@@ -134,6 +147,19 @@ export function AgentDashboardClient({ agentName, stats, clientCount, recentLots
           </div>
         </Card>
       </div>
+
+      {/* Add Client Modal */}
+      <Modal open={showAddClient} onClose={() => setShowAddClient(false)} title="Add Client">
+        <ContactForm
+          agents={agents}
+          onSuccess={() => {
+            setShowAddClient(false);
+            router.push("/agent/clients");
+          }}
+          onCancel={() => setShowAddClient(false)}
+          defaultAgentId={agentId}
+        />
+      </Modal>
     </div>
   );
 }

@@ -294,6 +294,7 @@ function StockTab({
               <th className="px-4 sm:px-6 py-3 text-left text-xs font-semibold text-muted uppercase tracking-wider">Status</th>
               <th className="px-4 sm:px-6 py-3 text-left text-xs font-semibold text-muted uppercase tracking-wider">Customer</th>
               <th className="px-4 sm:px-6 py-3 text-left text-xs font-semibold text-muted uppercase tracking-wider">Agent</th>
+              <th className="px-4 sm:px-6 py-3 text-right text-xs font-semibold text-muted uppercase tracking-wider">Commission</th>
               <th className="px-4 sm:px-6 py-3 text-left text-xs font-semibold text-muted uppercase tracking-wider">Actions</th>
             </tr>
           </thead>
@@ -324,6 +325,13 @@ function StockTab({
                   ) : "—"}
                 </td>
                 <td className="px-4 sm:px-6 py-3.5 text-sm text-body">{row.agent_name || "—"}</td>
+                <td className="px-4 sm:px-6 py-3.5 text-sm text-right font-mono text-secondary">
+                  {row.commission_rate != null
+                    ? row.commission_type === "flat"
+                      ? formatPrice(row.commission_rate)
+                      : `${row.commission_rate}%`
+                    : "—"}
+                </td>
                 <td className="px-4 sm:px-6 py-3.5">
                   {row.status === "Available" && (
                     <button
@@ -341,7 +349,7 @@ function StockTab({
             ))}
             {stock.length === 0 && (
               <tr>
-                <td colSpan={11} className="px-6 py-12 text-center text-secondary text-sm">
+                <td colSpan={12} className="px-6 py-12 text-center text-secondary text-sm">
                   No lots found{statusFilter !== "All" ? ` with status "${statusFilter}"` : ""}. Click &quot;Add Lot&quot; to create one.
                 </td>
               </tr>

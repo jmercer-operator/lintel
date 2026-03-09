@@ -56,6 +56,8 @@ export interface StockItem {
   agent_id: string | null;
   agent_name: string | null;
   notes: string | null;
+  commission_rate: number | null;
+  commission_type: CommissionType | null;
   created_at: string;
   updated_at: string;
 }

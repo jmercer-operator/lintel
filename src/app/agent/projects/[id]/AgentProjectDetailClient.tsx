@@ -4,8 +4,9 @@ import { useState } from "react";
 import Link from "next/link";
 import { Card } from "@/components/Card";
 import { StatusBadge } from "@/components/StatusBadge";
+import { ProjectLogo } from "@/components/ProjectLogo";
 import type { ProjectWithStats, StockItem, StockStatus } from "@/lib/types";
-import { formatPrice, formatArea, STATUS_COLORS } from "@/lib/types";
+import { formatPrice, formatArea } from "@/lib/types";
 import type { ProjectDocument, DocumentCategory } from "@/lib/data/documents";
 import type { ProjectMilestone } from "@/lib/data/milestones";
 
@@ -54,18 +55,41 @@ export function AgentProjectDetailClient({ project, stock, milestones, documents
   return (
     <div className="space-y-6">
       {/* Back */}
-      <Link href="/agent" className="inline-flex items-center gap-1 text-sm text-secondary hover:text-heading transition-colors">
+      <Link href="/agent/projects" className="inline-flex items-center gap-1 text-sm text-secondary hover:text-heading transition-colors">
         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
           <polyline points="15 18 9 12 15 6" />
         </svg>
-        Back to Dashboard
+        Back to Projects
       </Link>
 
-      {/* Header */}
-      <div>
-        <h1 className="text-2xl font-bold text-heading">{project.name}</h1>
-        <p className="text-secondary text-sm mt-1">{project.address}</p>
-      </div>
+      {/* Hero image */}
+      {project.hero_render_url ? (
+        <div className="h-48 md:h-64 rounded-[var(--radius-card)] overflow-hidden bg-bg-alt relative">
+          <img
+            src={project.hero_render_url}
+            alt={project.name}
+            className="w-full h-full object-cover"
+          />
+          <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent" />
+          <div className="absolute bottom-4 left-4 flex items-center gap-3">
+            <ProjectLogo logoUrl={project.logo_url} name={project.name} size={32} />
+            <div>
+              <h1 className="text-xl md:text-2xl font-bold text-white">{project.name}</h1>
+              <p className="text-white/80 text-sm">{project.address}</p>
+            </div>
+          </div>
+        </div>
+      ) : (
+        <div>
+          <div className="flex items-center gap-3">
+            <ProjectLogo logoUrl={project.logo_url} name={project.name} size={32} />
+            <div>
+              <h1 className="text-2xl font-bold text-heading">{project.name}</h1>
+              <p className="text-secondary text-sm mt-1">{project.address}</p>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Stats */}
       <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
@@ -227,12 +251,10 @@ export function AgentProjectDetailClient({ project, stock, milestones, documents
 
               {/* Milestone list */}
               <div className="relative">
-                {/* Vertical line */}
                 <div className="absolute left-[11px] top-0 bottom-0 w-px bg-border" />
                 <div className="space-y-4">
                   {milestones.map((m) => (
                     <div key={m.id} className="flex items-start gap-4 relative">
-                      {/* Icon */}
                       <div className="relative z-10 flex-shrink-0">
                         {m.status === "completed" ? (
                           <div className="w-6 h-6 rounded-full bg-emerald-primary flex items-center justify-center">
@@ -248,7 +270,6 @@ export function AgentProjectDetailClient({ project, stock, milestones, documents
                           <div className="w-6 h-6 rounded-full border-2 border-border bg-white" />
                         )}
                       </div>
-                      {/* Content */}
                       <div className="flex-1 pb-4">
                         <p className={`text-sm font-semibold ${m.status === "upcoming" ? "text-muted" : "text-heading"}`}>
                           {m.name}

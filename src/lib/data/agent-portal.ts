@@ -5,9 +5,10 @@ import type { ProjectMilestone } from "@/lib/data/milestones";
 
 /**
  * Get all stock items assigned to a specific agent, across all projects.
+ * Includes commission_rate and commission_type from stock, plus project logo_url.
  */
 export async function getAgentStock(agentId: string): Promise<
-  (StockItem & { project_name: string })[]
+  (StockItem & { project_name: string; project_logo_url: string | null })[]
 > {
   const supabase = await createClient();
 
@@ -20,28 +21,31 @@ export async function getAgentStock(agentId: string): Promise<
   if (error) throw error;
   if (!stock || stock.length === 0) return [];
 
-  // Get project names
+  // Get project names and logos
   const projectIds = [...new Set(stock.map((s) => s.project_id))];
   const { data: projects } = await supabase
     .from("projects")
-    .select("id, name")
+    .select("id, name, logo_url")
     .in("id", projectIds);
 
-  const projectMap: Record<string, string> = {};
+  const projectMap: Record<string, { name: string; logo_url: string | null }> = {};
   for (const p of projects || []) {
-    projectMap[p.id] = p.name;
+    projectMap[p.id] = { name: p.name, logo_url: p.logo_url };
   }
 
   return (stock as StockItem[]).map((s) => ({
     ...s,
-    project_name: projectMap[s.project_id] || "Unknown",
+    project_name: projectMap[s.project_id]?.name || "Unknown",
+    project_logo_url: projectMap[s.project_id]?.logo_url || null,
   }));
 }
 
 /**
  * Get stats for an agent's stock.
+ * activeLots = Available + EOI only (unsold lots)
+ * allLots = total across all statuses
  */
-export async function getAgentStockStats(agentId: string): Promise<StockStats & { commission_ytd: number }> {
+export async function getAgentStockStats(agentId: string): Promise<StockStats & { activeLots: number; allLots: number }> {
   const supabase = await createClient();
 
   const { data: stock, error } = await supabase
@@ -52,7 +56,6 @@ export async function getAgentStockStats(agentId: string): Promise<StockStats & 
   if (error) throw error;
 
   const stats: StockStats = { total: 0, available: 0, eoi: 0, underContract: 0, exchanged: 0, settled: 0 };
-  let commission_ytd = 0;
 
   for (const s of stock || []) {
     stats.total++;
@@ -61,15 +64,14 @@ export async function getAgentStockStats(agentId: string): Promise<StockStats & 
       case "EOI": stats.eoi++; break;
       case "Under Contract": stats.underContract++; break;
       case "Exchanged": stats.exchanged++; break;
-      case "Settled":
-        stats.settled++;
-        // Estimate commission at 2% for preview
-        if (s.price) commission_ytd += Number(s.price) * 0.02;
-        break;
+      case "Settled": stats.settled++; break;
     }
   }
 
-  return { ...stats, commission_ytd };
+  const activeLots = stats.available + stats.eoi;
+  const allLots = stats.total;
+
+  return { ...stats, activeLots, allLots };
 }
 
 /**
@@ -210,6 +212,59 @@ export async function getAgentClients(agentId: string): Promise<
       })),
     };
   });
+}
+
+/**
+ * Check if a stock item has a linked customer via contact_stock.
+ */
+export async function stockHasLinkedCustomer(stockId: string): Promise<boolean> {
+  const supabase = await createClient();
+  const { data, error } = await supabase
+    .from("contact_stock")
+    .select("id")
+    .eq("stock_id", stockId)
+    .limit(1);
+
+  if (error) return false;
+  return (data || []).length > 0;
+}
+
+/**
+ * Get agent details for profile page.
+ */
+export async function getAgentForProfile(agentId: string): Promise<Record<string, unknown> | null> {
+  const supabase = await createClient();
+  const { data, error } = await supabase
+    .from("agents")
+    .select("*")
+    .eq("id", agentId)
+    .single();
+
+  if (error) return null;
+  return data;
+}
+
+/**
+ * Update agent profile (editable fields only: email, phone, secondary_phone, address).
+ */
+export async function updateAgentProfile(agentId: string, updates: {
+  email?: string | null;
+  phone?: string | null;
+  secondary_phone?: string | null;
+  address_line_1?: string | null;
+  address_line_2?: string | null;
+  suburb?: string | null;
+  state?: string | null;
+  postcode?: string | null;
+}): Promise<{ error?: string }> {
+  const supabase = await createClient();
+  const { error } = await supabase
+    .from("agents")
+    .update({ ...updates, updated_at: new Date().toISOString() })
+    .eq("id", agentId);
+
+  if (error) return { error: error.message };
+  return {};
 }
 
 /**

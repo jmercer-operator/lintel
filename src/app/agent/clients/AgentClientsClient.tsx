@@ -1,10 +1,13 @@
 "use client";
 
 import { useState } from "react";
+import { useRouter } from "next/navigation";
 import { Card } from "@/components/Card";
 import { StatusBadge } from "@/components/StatusBadge";
 import { Avatar } from "@/components/Avatar";
-import type { StockStatus } from "@/lib/types";
+import { Modal } from "@/components/Modal";
+import { ContactForm } from "@/components/ContactForm";
+import type { StockStatus, Agent } from "@/lib/types";
 
 interface AgentClient {
   id: string;
@@ -19,10 +22,14 @@ interface AgentClient {
 
 interface Props {
   clients: AgentClient[];
+  agents: Agent[];
+  agentId: string;
 }
 
-export function AgentClientsClient({ clients }: Props) {
+export function AgentClientsClient({ clients, agents, agentId }: Props) {
   const [search, setSearch] = useState("");
+  const [showAddClient, setShowAddClient] = useState(false);
+  const router = useRouter();
 
   const filtered = clients.filter((c) => {
     const term = search.toLowerCase();
@@ -41,6 +48,18 @@ export function AgentClientsClient({ clients }: Props) {
           <h1 className="text-2xl font-bold text-heading">My Clients</h1>
           <p className="text-secondary text-sm mt-1">{clients.length} client{clients.length !== 1 ? "s" : ""}</p>
         </div>
+        <button
+          onClick={() => setShowAddClient(true)}
+          className="inline-flex items-center gap-2 px-4 py-2.5 bg-emerald-primary text-white rounded-[var(--radius-button)] text-sm font-semibold hover:bg-emerald-dark transition-colors cursor-pointer"
+        >
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" />
+            <circle cx="8.5" cy="7" r="4" />
+            <line x1="20" y1="8" x2="20" y2="14" />
+            <line x1="23" y1="11" x2="17" y2="11" />
+          </svg>
+          Add Client
+        </button>
       </div>
 
       {/* Search */}
@@ -133,6 +152,19 @@ export function AgentClientsClient({ clients }: Props) {
           ))}
         </div>
       )}
+
+      {/* Add Client Modal */}
+      <Modal open={showAddClient} onClose={() => setShowAddClient(false)} title="Add Client">
+        <ContactForm
+          agents={agents}
+          onSuccess={() => {
+            setShowAddClient(false);
+            router.refresh();
+          }}
+          onCancel={() => setShowAddClient(false)}
+          defaultAgentId={agentId}
+        />
+      </Modal>
     </div>
   );
 }
