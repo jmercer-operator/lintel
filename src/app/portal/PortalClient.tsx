@@ -76,9 +76,13 @@ export default function PortalClient({
       doc.document_type === "Trust Receipt"
   );
 
-  // Progress pictures & videos from project
-  const progressPictures = project?.progress_pictures ?? [];
-  const progressVideos = project?.progress_videos ?? [];
+  // Progress pictures & videos from project — normalise both old string and new JSON formats
+  const progressPictures = (project?.progress_pictures ?? []).map((item) =>
+    typeof item === "string" ? item : item.url
+  );
+  const progressVideos = (project?.progress_videos ?? []).map((item) =>
+    typeof item === "string" ? item : item.url
+  );
 
   useEffect(() => {
     setWelcomeMsg(getRandomMessage(welcomeMessages));

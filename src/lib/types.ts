@@ -53,8 +53,8 @@ export interface Project {
   num_dwellings: number | null;
   num_commercial: number | null;
   num_hotel_keys: number | null;
-  progress_pictures: string[] | null;
-  progress_videos: string[] | null;
+  progress_pictures: Array<string | { url: string; uploaded_at?: string }> | null;
+  progress_videos: Array<string | { url: string; uploaded_at?: string }> | null;
   created_at: string;
   updated_at: string;
 }

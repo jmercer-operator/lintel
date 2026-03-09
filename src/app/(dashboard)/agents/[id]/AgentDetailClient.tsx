@@ -9,6 +9,7 @@ import { Modal } from "@/components/Modal";
 import { StatusBadge } from "@/components/StatusBadge";
 import { ProjectLogo } from "@/components/ProjectLogo";
 import { AgentForm } from "@/components/AgentForm";
+import { assignStockToAgentAction } from "@/lib/actions";
 import {
   formatPrice,
   type AgentWithStats,
@@ -31,19 +32,42 @@ interface StockRow {
   projects: { name: string } | null;
 }
 
+interface AvailableStockRow {
+  id: string;
+  lot_number: string;
+  bedrooms: number;
+  bathrooms: number;
+  car_spaces: number;
+  price: number | null;
+  project_id: string;
+  project_name: string;
+}
+
 interface Props {
   agent: AgentWithStats;
   projects: ProjectWithStats[];
   stock: StockRow[];
   agentProjectCommissions: AgentProject[];
   availableCount: number;
+  availableStockForAssignment: AvailableStockRow[];
+  projectIdsWithAssignedStock: string[];
 }
 
-export function AgentDetailClient({ agent, projects, stock, agentProjectCommissions, availableCount }: Props) {
+export function AgentDetailClient({
+  agent,
+  projects,
+  stock,
+  agentProjectCommissions,
+  availableCount,
+  availableStockForAssignment,
+  projectIdsWithAssignedStock,
+}: Props) {
   const router = useRouter();
   const [showEditModal, setShowEditModal] = useState(false);
+  const [showAssignModal, setShowAssignModal] = useState(false);
 
-  const assignedProjects = projects.filter((p) => agent.assigned_projects.includes(p.id));
+  // Change 2: Only show projects where agent has assigned stock
+  const assignedProjects = projects.filter((p) => projectIdsWithAssignedStock.includes(p.id));
 
   // Build commission map per project
   const commissionMap = new Map<string, { type: string | null; rate: number | null }>();
@@ -83,7 +107,16 @@ export function AgentDetailClient({ agent, projects, stock, agentProjectCommissi
             {agent.agency && <p className="text-secondary text-sm">{agent.agency}</p>}
           </div>
         </div>
-        <Button onClick={() => setShowEditModal(true)}>Edit Agent</Button>
+        <div className="flex gap-2">
+          <Button variant="secondary" onClick={() => setShowAssignModal(true)}>
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <line x1="12" y1="5" x2="12" y2="19" />
+              <line x1="5" y1="12" x2="19" y2="12" />
+            </svg>
+            Assign Stock
+          </Button>
+          <Button onClick={() => setShowEditModal(true)}>Edit Agent</Button>
+        </div>
       </div>
 
       {/* Performance Summary */}
@@ -98,7 +131,7 @@ export function AgentDetailClient({ agent, projects, stock, agentProjectCommissi
         </Card>
         <Card padding="sm">
           <p className="text-xs text-secondary uppercase tracking-wider mb-1">Projects</p>
-          <p className="text-2xl font-bold text-heading font-mono">{agent.assigned_projects.length}</p>
+          <p className="text-2xl font-bold text-heading font-mono">{assignedProjects.length}</p>
         </Card>
         <Card padding="sm">
           <p className="text-xs text-[#1A9E6F] uppercase tracking-wider mb-1">Available for Sale</p>
@@ -185,11 +218,11 @@ export function AgentDetailClient({ agent, projects, stock, agentProjectCommissi
             </Card>
           )}
 
-          {/* Assigned Projects — styled cards */}
+          {/* Projects — only show where agent has assigned stock */}
           <Card>
             <h3 className="font-semibold text-heading mb-4">Projects</h3>
             {assignedProjects.length === 0 ? (
-              <p className="text-sm text-secondary">No projects assigned</p>
+              <p className="text-sm text-secondary">No projects with assigned stock</p>
             ) : (
               <div className="space-y-3">
                 {assignedProjects.map((p) => {
@@ -266,6 +299,16 @@ export function AgentDetailClient({ agent, projects, stock, agentProjectCommissi
           onCancel={() => setShowEditModal(false)}
         />
       </Modal>
+
+      {/* Assign Stock Modal */}
+      <AssignStockModal
+        open={showAssignModal}
+        onClose={() => setShowAssignModal(false)}
+        agentId={agent.id}
+        agentProjectCommissions={agentProjectCommissions}
+        projects={projects}
+        availableStock={availableStockForAssignment}
+      />
     </div>
   );
 }
@@ -276,5 +319,163 @@ function Detail({ label, value, mono }: { label: string; value: string | null | 
       <p className="text-xs text-secondary mb-0.5">{label}</p>
       <p className={`text-body ${mono ? "font-mono text-xs" : ""}`}>{value || "—"}</p>
     </div>
+  );
+}
+
+/* ─── Assign Stock Modal ─── */
+
+function AssignStockModal({
+  open,
+  onClose,
+  agentId,
+  agentProjectCommissions,
+  projects,
+  availableStock,
+}: {
+  open: boolean;
+  onClose: () => void;
+  agentId: string;
+  agentProjectCommissions: AgentProject[];
+  projects: ProjectWithStats[];
+  availableStock: AvailableStockRow[];
+}) {
+  const router = useRouter();
+  const [selectedProjectId, setSelectedProjectId] = useState("");
+  const [selectedStockIds, setSelectedStockIds] = useState<Set<string>>(new Set());
+  const [assigning, setAssigning] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  // Only show projects the agent has access to via agent_projects
+  const agentProjectIds = agentProjectCommissions.map((ap) => ap.project_id);
+  const assignableProjects = projects.filter((p) => agentProjectIds.includes(p.id));
+
+  // Filter available stock by selected project
+  const filteredStock = selectedProjectId
+    ? availableStock.filter((s) => s.project_id === selectedProjectId)
+    : [];
+
+  function toggleStock(stockId: string) {
+    setSelectedStockIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(stockId)) next.delete(stockId);
+      else next.add(stockId);
+      return next;
+    });
+  }
+
+  async function handleAssign() {
+    if (selectedStockIds.size === 0) return;
+    setAssigning(true);
+    setError(null);
+
+    const formData = new FormData();
+    formData.set("agent_id", agentId);
+    for (const id of selectedStockIds) {
+      formData.append("stock_ids", id);
+    }
+
+    const result = await assignStockToAgentAction(formData);
+    if (result.error) {
+      setError(result.error);
+      setAssigning(false);
+    } else {
+      setSelectedProjectId("");
+      setSelectedStockIds(new Set());
+      onClose();
+      router.refresh();
+    }
+  }
+
+  function handleClose() {
+    setSelectedProjectId("");
+    setSelectedStockIds(new Set());
+    setError(null);
+    onClose();
+  }
+
+  return (
+    <Modal open={open} onClose={handleClose} title="Assign Stock">
+      <div className="space-y-4">
+        {error && (
+          <div className="px-4 py-3 bg-error/10 border border-error/20 rounded-[var(--radius-input)] text-error text-sm">
+            {error}
+          </div>
+        )}
+
+        {/* Project Dropdown */}
+        <div>
+          <label className="block text-sm font-medium text-heading mb-1">Select Project</label>
+          <select
+            value={selectedProjectId}
+            onChange={(e) => {
+              setSelectedProjectId(e.target.value);
+              setSelectedStockIds(new Set());
+            }}
+            className="w-full px-3 py-2 text-sm rounded-[var(--radius-input)] border border-border bg-white text-body focus:border-emerald-primary focus:ring-1 focus:ring-emerald-primary focus:outline-none"
+          >
+            <option value="">Choose a project…</option>
+            {assignableProjects.map((p) => (
+              <option key={p.id} value={p.id}>{p.name}</option>
+            ))}
+          </select>
+        </div>
+
+        {/* Available Stock List */}
+        {selectedProjectId && (
+          <div>
+            <p className="text-sm font-medium text-heading mb-2">
+              Available Stock ({filteredStock.length} {filteredStock.length === 1 ? "lot" : "lots"})
+            </p>
+            {filteredStock.length === 0 ? (
+              <p className="text-sm text-secondary py-4 text-center">
+                No available unassigned stock for this project
+              </p>
+            ) : (
+              <div className="max-h-64 overflow-y-auto border border-border rounded-[var(--radius-input)]">
+                {filteredStock.map((s) => (
+                  <label
+                    key={s.id}
+                    className="flex items-center gap-3 px-3 py-2.5 border-b border-border last:border-0 hover:bg-bg-alt cursor-pointer transition-colors"
+                  >
+                    <input
+                      type="checkbox"
+                      checked={selectedStockIds.has(s.id)}
+                      onChange={() => toggleStock(s.id)}
+                      className="w-4 h-4 rounded border-border text-emerald-primary focus:ring-emerald-primary accent-[#1A9E6F]"
+                    />
+                    <div className="flex-1 flex items-center justify-between">
+                      <div>
+                        <span className="font-mono text-sm font-semibold text-heading">
+                          Lot {s.lot_number}
+                        </span>
+                        <span className="text-xs text-secondary ml-3">
+                          {s.bedrooms}B/{s.bathrooms}Ba/{s.car_spaces}C
+                        </span>
+                      </div>
+                      <span className="font-mono text-xs text-secondary">
+                        {formatPrice(s.price)}
+                      </span>
+                    </div>
+                  </label>
+                ))}
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* Actions */}
+        <div className="flex gap-3 justify-end pt-2">
+          <Button type="button" variant="ghost" onClick={handleClose}>
+            Cancel
+          </Button>
+          <Button
+            onClick={handleAssign}
+            disabled={assigning || selectedStockIds.size === 0}
+          >
+            {assigning ? "Assigning…" : `Assign ${selectedStockIds.size > 0 ? `(${selectedStockIds.size})` : ""}`}
+          </Button>
+        </div>
+      </div>
+    </Modal>
   );
 }

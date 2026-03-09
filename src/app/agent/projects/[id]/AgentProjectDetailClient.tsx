@@ -12,8 +12,12 @@ import type { ProjectDocument, DocumentCategory } from "@/lib/data/documents";
 import type { ProjectMilestone } from "@/lib/data/milestones";
 
 /* ─── Progress Media Viewer (read-only for agents) ─── */
-function ProgressMediaSection({ pictures, videos }: { pictures: string[]; videos: string[] }) {
+function ProgressMediaSection({ pictures: rawPictures, videos: rawVideos }: { pictures: Array<string | { url: string; uploaded_at?: string }>; videos: Array<string | { url: string; uploaded_at?: string }> }) {
   const [lightboxImg, setLightboxImg] = useState<string | null>(null);
+
+  // Normalise: handle both plain string URLs and JSON objects
+  const pictures = rawPictures.map((item) => typeof item === "string" ? item : item.url);
+  const videos = rawVideos.map((item) => typeof item === "string" ? item : item.url);
 
   if (pictures.length === 0 && videos.length === 0) return null;
 

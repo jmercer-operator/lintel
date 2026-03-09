@@ -69,7 +69,6 @@ export function MilestonesTab({ projectId, milestones }: Props) {
       <Card padding="md">
         <div className="flex items-center justify-between mb-3">
           <h3 className="font-semibold text-heading">Construction Progress</h3>
-          <span className="text-2xl font-bold font-mono text-emerald-primary">{progress}%</span>
         </div>
         <div className="w-full h-3 bg-bg-alt rounded-full overflow-hidden">
           <div

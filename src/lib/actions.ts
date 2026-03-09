@@ -542,6 +542,45 @@ export async function updateStockAction(formData: FormData) {
   return { success: true };
 }
 
+/* ─── Assign Stock to Agent ─── */
+
+export async function assignStockToAgentAction(formData: FormData) {
+  const supabase = await createClient();
+
+  const agent_id = formData.get("agent_id") as string;
+  const stock_ids = formData.getAll("stock_ids") as string[];
+
+  if (!agent_id) return { error: "Agent ID is required" };
+  if (stock_ids.length === 0) return { error: "Select at least one lot to assign" };
+
+  // Get agent name for the agent_name field
+  const { data: agent } = await supabase
+    .from("agents")
+    .select("first_name, last_name")
+    .eq("id", agent_id)
+    .single();
+
+  const agentName = agent ? `${agent.first_name} ${agent.last_name.charAt(0)}.` : null;
+
+  for (const stockId of stock_ids) {
+    const { error } = await supabase
+      .from("stock")
+      .update({
+        agent_id,
+        agent_name: agentName,
+        updated_at: new Date().toISOString(),
+      })
+      .eq("id", stockId);
+
+    if (error) return { error: error.message };
+  }
+
+  revalidatePath(`/agents/${agent_id}`);
+  revalidatePath("/");
+  revalidatePath("/stock");
+  return { success: true };
+}
+
 /* ─── Document Actions ─── */
 
 export async function uploadProjectDocumentAction(formData: FormData) {
@@ -885,8 +924,9 @@ export async function uploadProgressPictureAction(formData: FormData) {
 
   if (fetchError || !project) return { error: "Project not found" };
 
-  const existingPictures: string[] = project.progress_pictures || [];
-  const newUrls: string[] = [];
+  // Support both old string format and new JSON object format
+  const existingPictures: Array<string | { url: string; uploaded_at: string }> = project.progress_pictures || [];
+  const newEntries: Array<{ url: string; uploaded_at: string }> = [];
 
   for (const file of files) {
     const timestamp = Date.now();
@@ -904,19 +944,19 @@ export async function uploadProgressPictureAction(formData: FormData) {
       .from("project-documents")
       .getPublicUrl(path);
 
-    newUrls.push(urlData.publicUrl);
+    newEntries.push({ url: urlData.publicUrl, uploaded_at: new Date().toISOString() });
   }
 
-  // Append new URLs to existing
+  // Append new entries to existing
   const { error: updateError } = await supabase
     .from("projects")
-    .update({ progress_pictures: [...existingPictures, ...newUrls], updated_at: new Date().toISOString() })
+    .update({ progress_pictures: [...existingPictures, ...newEntries], updated_at: new Date().toISOString() })
     .eq("id", project_id);
 
   if (updateError) return { error: updateError.message };
 
   revalidatePath(`/projects/${project_id}`);
-  return { success: true, urls: newUrls };
+  return { success: true };
 }
 
 export async function deleteProgressPictureAction(formData: FormData) {
@@ -935,8 +975,12 @@ export async function deleteProgressPictureAction(formData: FormData) {
 
   if (fetchError || !project) return { error: "Project not found" };
 
-  const pictures: string[] = project.progress_pictures || [];
-  const updated = pictures.filter((p: string) => p !== url);
+  // Handle both old string format and new JSON object format
+  const pictures: Array<string | { url: string; uploaded_at: string }> = project.progress_pictures || [];
+  const updated = pictures.filter((p) => {
+    const pUrl = typeof p === "string" ? p : p.url;
+    return pUrl !== url;
+  });
 
   // Try to delete from storage
   try {
@@ -977,8 +1021,8 @@ export async function uploadProgressVideoAction(formData: FormData) {
 
   if (fetchError || !project) return { error: "Project not found" };
 
-  const existingVideos: string[] = project.progress_videos || [];
-  const newUrls: string[] = [];
+  const existingVideos: Array<string | { url: string; uploaded_at: string }> = project.progress_videos || [];
+  const newEntries: Array<{ url: string; uploaded_at: string }> = [];
 
   for (const file of files) {
     const timestamp = Date.now();
@@ -995,18 +1039,18 @@ export async function uploadProgressVideoAction(formData: FormData) {
       .from("project-documents")
       .getPublicUrl(path);
 
-    newUrls.push(urlData.publicUrl);
+    newEntries.push({ url: urlData.publicUrl, uploaded_at: new Date().toISOString() });
   }
 
   const { error: updateError } = await supabase
     .from("projects")
-    .update({ progress_videos: [...existingVideos, ...newUrls], updated_at: new Date().toISOString() })
+    .update({ progress_videos: [...existingVideos, ...newEntries], updated_at: new Date().toISOString() })
     .eq("id", project_id);
 
   if (updateError) return { error: updateError.message };
 
   revalidatePath(`/projects/${project_id}`);
-  return { success: true, urls: newUrls };
+  return { success: true };
 }
 
 export async function deleteProgressVideoAction(formData: FormData) {
@@ -1025,8 +1069,11 @@ export async function deleteProgressVideoAction(formData: FormData) {
 
   if (fetchError || !project) return { error: "Project not found" };
 
-  const videos: string[] = project.progress_videos || [];
-  const updated = videos.filter((v: string) => v !== url);
+  const videos: Array<string | { url: string; uploaded_at: string }> = project.progress_videos || [];
+  const updated = videos.filter((v) => {
+    const vUrl = typeof v === "string" ? v : v.url;
+    return vUrl !== url;
+  });
 
   try {
     const urlObj = new URL(url);
