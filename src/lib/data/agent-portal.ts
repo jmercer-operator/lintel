@@ -143,7 +143,8 @@ async function getProjectsByIds(ids: string[]): Promise<ProjectWithStats[]> {
 }
 
 /**
- * Get contacts where this agent is the referring_agent_id.
+ * Get clients for this agent: contacts who are either referred by this agent
+ * OR linked (via contact_stock) to any lot assigned to this agent.
  */
 export async function getAgentClients(agentId: string): Promise<
   Array<{
@@ -159,10 +160,39 @@ export async function getAgentClients(agentId: string): Promise<
 > {
   const supabase = await createClient();
 
+  // 1. Get all stock IDs assigned to this agent
+  const { data: agentStock } = await supabase
+    .from("stock")
+    .select("id")
+    .eq("agent_id", agentId);
+  const agentStockIds = (agentStock || []).map((s) => s.id);
+
+  // 2. Get contact_ids linked to agent's stock
+  let stockLinkedContactIds: string[] = [];
+  if (agentStockIds.length > 0) {
+    const { data: csLinks } = await supabase
+      .from("contact_stock")
+      .select("contact_id")
+      .in("stock_id", agentStockIds);
+    stockLinkedContactIds = (csLinks || []).map((cs) => cs.contact_id);
+  }
+
+  // 3. Get contacts referred by this agent
+  const { data: referredContacts } = await supabase
+    .from("contacts")
+    .select("id")
+    .eq("referring_agent_id", agentId);
+  const referredIds = (referredContacts || []).map((c) => c.id);
+
+  // 4. Merge unique contact IDs
+  const allContactIds = [...new Set([...stockLinkedContactIds, ...referredIds])];
+  if (allContactIds.length === 0) return [];
+
+  // 5. Fetch full contact records
   const { data: contacts, error } = await supabase
     .from("contacts")
     .select("id, first_name, last_name, email, phone, classification, created_at")
-    .eq("referring_agent_id", agentId)
+    .in("id", allContactIds)
     .order("created_at", { ascending: false });
 
   if (error) throw error;

@@ -4,6 +4,7 @@ import { useRouter } from "next/navigation";
 import { Logo } from "./Logo";
 import { Avatar } from "./Avatar";
 import { RoleSwitcher } from "./RoleSwitcher";
+import { NotificationBell } from "./NotificationBell";
 import { getCurrentUserRole, isPreviewMode } from "@/lib/auth/roles";
 
 interface TopBarProps {
@@ -58,7 +59,7 @@ export function TopBar({ avatarName = "AM" }: TopBarProps) {
           </svg>
           <input
             type="text"
-            placeholder="Search projects, stock, agents..."
+            placeholder={(() => { const r = getCurrentUserRole(); return r === 'agent' ? 'Search projects, lots, clients...' : r === 'client' ? 'Search...' : 'Search projects, stock, agents...'; })()}
             className="w-full pl-10 pr-16 py-2 text-sm rounded-[var(--radius-input)] border border-border bg-bg placeholder:text-muted focus:border-emerald-primary focus:ring-1 focus:ring-emerald-primary focus:outline-none transition-colors"
             readOnly
           />
@@ -72,6 +73,11 @@ export function TopBar({ avatarName = "AM" }: TopBarProps) {
       <div className="flex items-center gap-2">
         {/* Role Switcher */}
         <RoleSwitcher />
+
+        {/* Notification bell — agent & staff only */}
+        {getCurrentUserRole() !== "client" && (
+          <NotificationBell />
+        )}
 
         {/* User avatar — click goes to profile */}
         <button onClick={handleAvatarClick} className="cursor-pointer">
