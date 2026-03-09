@@ -831,3 +831,67 @@ Currently when agent tries to change status from Available, it just blocks with 
 - Build passes with zero errors
 - Commit message: "checkpoint 8: agent lot linking + client detail"
 - Push to main
+
+## Checkpoint 9 — Staff Stock + Agent Commission + Project Fields (CURRENT)
+
+### Database — ALREADY UPDATED (do NOT run SQL again)
+- agent_projects: added commission_type ('percentage'|'flat'), commission_rate NUMERIC(5,2)
+- projects: added project_status ('pre_construction'|'under_construction'|'complete'), development_type TEXT, num_dwellings INT, num_commercial INT, num_hotel_keys INT, description TEXT
+- Existing agent commissions copied to agent_projects rows
+- Project statuses seeded
+
+### 6 Changes
+
+**1. Staff /stock page — full stock table with filters:**
+- Currently empty. Build a proper stock table showing ALL stock across all projects
+- Columns: Project (with logo) | Lot | Bed | Bath | Car | m² Int | m² Ext | Price | Status | Agent | Commission | Updated
+- Filter bar at top: filter by Project (dropdown), Status (dropdown), Agent (dropdown)
+- Search box for lot number
+- Click row → opens stock detail/edit modal (same as project stock tab)
+- Reuse existing stock data fetching from src/lib/data/stock.ts but fetch ALL stock (not filtered by project)
+
+**2. Commission per agent per project (not per agent globally):**
+- When adding/editing an agent, the form needs a "Projects & Commission" section
+- Show list of all projects as checkboxes
+- When a project is checked, show commission_type dropdown + commission_rate input for that project
+- This creates/updates rows in agent_projects table (with commission_type, commission_rate)
+- Remove the old global commission_type and commission_rate fields from agent form
+- On save: upsert agent_projects rows for selected projects, delete rows for unchecked projects
+
+**3. Agent card — remove commission, add "Available for Sale":**
+- On the agent detail card/page: remove the commission display
+- Add "Available for Sale" count: number of lots with status 'Available' assigned to this agent across all projects
+- Show as a metric/badge on the card
+
+**4. Agent card — project list design element:**
+- Where projects are listed on agent detail, add visual design:
+  - Each project as a card with: project logo (if exists), project name, project address, status badge (pre_construction/under_construction/complete), commission for this agent
+  - Use the emerald/brand card style, subtle shadow, rounded corners
+  - Not just a plain text list
+
+**5. Project status dropdown:**
+- Add project_status field to project form (add/edit)
+- Options: "Pre-Construction", "Under Construction", "Complete"
+- Only staff can edit this (already staff-only form)
+- Display as a badge on project cards and detail pages
+- Badge colors: Pre-Construction = gold #D4A855, Under Construction = emerald #1A9E6F, Complete = slate/grey
+
+**6. Project additional fields (conditional display):**
+- Add to project form (add/edit):
+  - Development Type: text input (e.g. "Residential", "Mixed Use", "Commercial")
+  - Number of Dwellings: number input
+  - Number of Commercial Lots: number input
+  - Number of Hotel Keys: number input
+  - Description: textarea (multi-line)
+- Display these on project detail page in an "Overview" section
+- **AGENT PORTAL RULE**: Only show fields that have a value. If num_hotel_keys is null/0, don't show it. If description is empty, don't show it. This keeps the agent view clean.
+- Staff view always shows all fields (editable)
+
+### IMPORTANT:
+- Update types.ts with new fields (agent_projects commission, project new fields)
+- Update data fetching in src/lib/data/ to include new fields
+- The stock page at src/app/(dashboard)/stock/ needs to be built from scratch (it's currently a placeholder)
+- Agent form refactor: projects+commission section replaces old commission fields
+- Build passes with zero errors
+- Commit message: "checkpoint 9: stock page + project fields + commission refactor"
+- Push to main
