@@ -141,8 +141,8 @@ export function ContactsClient({ contacts, agents, projects, currentTab, searchQ
                 <th className="text-left px-4 py-3 font-semibold text-secondary text-xs uppercase tracking-wider">Email</th>
                 <th className="text-left px-4 py-3 font-semibold text-secondary text-xs uppercase tracking-wider">Phone</th>
                 <th className="text-left px-4 py-3 font-semibold text-secondary text-xs uppercase tracking-wider">Type</th>
-                <th className="text-left px-4 py-3 font-semibold text-secondary text-xs uppercase tracking-wider hidden lg:table-cell">Agent</th>
-                <th className="text-left px-4 py-3 font-semibold text-secondary text-xs uppercase tracking-wider hidden lg:table-cell">Project</th>
+                <th className="text-left px-4 py-3 font-semibold text-secondary text-xs uppercase tracking-wider">Agent</th>
+                <th className="text-left px-4 py-3 font-semibold text-secondary text-xs uppercase tracking-wider">Project</th>
                 <th className="text-left px-4 py-3 font-semibold text-secondary text-xs uppercase tracking-wider hidden xl:table-cell">Buyer</th>
                 <th className="text-left px-4 py-3 font-semibold text-secondary text-xs uppercase tracking-wider hidden md:table-cell">Added</th>
               </tr>
@@ -169,12 +169,12 @@ export function ContactsClient({ contacts, agents, projects, currentTab, searchQ
                     <td className="px-4 py-3">
                       <ClassificationBadge classification={contact.computed_classification} />
                     </td>
-                    <td className="px-4 py-3 text-secondary text-xs hidden lg:table-cell">
+                    <td className="px-4 py-3 text-secondary text-xs">
                       {contact.referring_agent_id
                         ? (() => { const a = agents.find(ag => ag.id === contact.referring_agent_id); return a ? `${a.first_name} ${a.last_name}` : "—"; })()
                         : contact.source === "direct_marketing" ? <span className="text-muted italic">Direct</span> : "—"}
                     </td>
-                    <td className="px-4 py-3 text-secondary text-xs hidden lg:table-cell">
+                    <td className="px-4 py-3 text-secondary text-xs">
                       {contact.linked_stock.length > 0
                         ? [...new Set(contact.linked_stock.map(s => s.project_name))].join(", ")
                         : "—"}
