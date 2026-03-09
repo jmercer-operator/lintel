@@ -991,3 +991,57 @@ Currently when agent tries to change status from Available, it just blocks with 
 - Build passes with zero errors
 - Commit as part of checkpoint 10 OR as separate commit "checkpoint 10b: dashboard stock grouping"
 - Push to main
+
+## Checkpoint 11 — Staff Fixes + Dashboard Grouping (CURRENT)
+
+### 5 Staff Fixes + Dashboard Stock Grouping
+
+**1. Agent detail — "Assign Stock" button:**
+- On the agent detail page (staff view), add an "Assign Stock" button
+- Clicking opens a modal:
+  - First: select a Project from a dropdown (only projects the agent has access to via agent_projects)
+  - Then: show available stock for that project (status = 'Available', not yet assigned to any agent)
+  - Stock items shown as checkboxes: Lot number, Bed, Bath, Car, Price
+  - Select multiple via checkboxes
+  - Click "Assign" → updates stock rows: sets agent_id to this agent
+  - After assignment, the stock appears under the agent's lots
+- This is different from the Reserve/Link Customer flow — this is ASSIGNING stock to an agent (who can then sell it)
+
+**2. Agent projects only show when stock is assigned:**
+- On the agent detail page, the "Projects" section should only show projects where the agent actually has assigned stock
+- If an agent has agent_projects entries but no stock assigned for that project, don't show the project
+- Query: show projects where there exists at least one stock item with agent_id = this agent AND project_id = that project
+
+**3. Remove % under project milestones:**
+- On project detail page, milestones section: remove any percentage display
+- Just show milestone name, status (complete/pending), and date
+
+**4. Progress media — "Add More" button + date stamps:**
+- Under Progress Pictures and Progress Videos sections on project detail:
+  - Add an "Add More" button (not just the initial upload)
+  - Each picture/video should show a date stamp (the date it was uploaded)
+  - Store dates alongside URLs — change progress_pictures and progress_videos from TEXT[] to JSONB[]
+  - Each entry: { "url": "...", "uploaded_at": "2026-03-09T..." }
+  - Display: thumbnail + date below it (e.g. "Mar 9, 2026")
+  - Sort newest first
+- NOTE: Since we're changing from TEXT[] to JSONB, the subagent should handle the migration in code (parse old TEXT[] values and wrap them in JSON objects if they exist)
+
+**5. Project description on project detail:**
+- On the project detail page, show the project description and other detail fields (development_type, num_dwellings, num_commercial, num_hotel_keys) in a prominent "About" or "Overview" section at the top
+- Only show fields that have values (hide empty ones)
+- Description can be multi-line — render with line breaks preserved
+
+**6. Dashboard stock grouping (from CP10b):**
+- On the staff dashboard where stock is listed, group lots under project names
+- Each project = collapsible header row with: project logo, project name, lot count, status summary
+- Lots HIDDEN by default
+- Click chevron arrow to expand/collapse
+- Multiple projects can be open at once
+- Filters still work (project, status, agent filter which groups/lots appear)
+
+### IMPORTANT:
+- Do NOT change the database schema via SQL — handle progress_pictures/progress_videos format change in application code
+- If progress_pictures currently has TEXT[] values, the code should handle both formats (plain URL strings and JSON objects)
+- Build passes with zero errors
+- Commit message: "checkpoint 11: staff fixes + dashboard grouping"
+- Push to main
