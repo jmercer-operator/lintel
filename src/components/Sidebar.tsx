@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { usePathname } from "next/navigation";
 import Link from "next/link";
 import { Logo } from "./Logo";
@@ -10,6 +10,7 @@ interface NavItem {
   label: string;
   icon: React.ReactNode;
   href: string;
+  badge?: number;
 }
 
 interface NavGroup {
@@ -17,39 +18,69 @@ interface NavGroup {
   items: NavItem[];
 }
 
-const navGroups: NavGroup[] = [
-  {
-    title: "OVERVIEW",
-    items: [
-      { label: "Dashboard", icon: <DashboardIcon />, href: "/" },
-      { label: "Projects", icon: <ProjectsIcon />, href: "/projects" },
-    ],
-  },
-  {
-    title: "SALES",
-    items: [
-      { label: "Stock", icon: <StockIcon />, href: "/stock" },
-      { label: "Pipeline", icon: <PipelineIcon />, href: "/pipeline" },
-      { label: "Contacts", icon: <ContactsIcon />, href: "/contacts" },
-    ],
-  },
-  {
-    title: "MANAGEMENT",
-    items: [
-      { label: "Agents", icon: <AgentsIcon />, href: "/agents" },
-      { label: "Documents", icon: <DocumentsIcon />, href: "/documents" },
-      { label: "Reports", icon: <ReportsIcon />, href: "/reports" },
-    ],
-  },
-  {
-    title: "SETTINGS",
-    items: [
-      { label: "Profile", icon: <ProfileIcon />, href: "/profile" },
-    ],
-  },
-];
+function usePendingRegistrationCount() {
+  const [count, setCount] = useState(0);
+  const pathname = usePathname();
+
+  useEffect(() => {
+    async function fetchCount() {
+      try {
+        const res = await fetch("/api/registrations/count");
+        if (res.ok) {
+          const data = await res.json();
+          setCount(data.count || 0);
+        }
+      } catch {
+        // silently fail
+      }
+    }
+    fetchCount();
+  }, [pathname]);
+
+  return count;
+}
 
 export function Sidebar() {
+  const pendingCount = usePendingRegistrationCount();
+
+  const navGroups: NavGroup[] = [
+    {
+      title: "OVERVIEW",
+      items: [
+        { label: "Dashboard", icon: <DashboardIcon />, href: "/" },
+        { label: "Projects", icon: <ProjectsIcon />, href: "/projects" },
+      ],
+    },
+    {
+      title: "SALES",
+      items: [
+        { label: "Stock", icon: <StockIcon />, href: "/stock" },
+        { label: "Pipeline", icon: <PipelineIcon />, href: "/pipeline" },
+        { label: "Contacts", icon: <ContactsIcon />, href: "/contacts" },
+      ],
+    },
+    {
+      title: "MANAGEMENT",
+      items: [
+        { label: "Agents", icon: <AgentsIcon />, href: "/agents" },
+        {
+          label: "Registrations",
+          icon: <RegistrationsIcon />,
+          href: "/registrations",
+          badge: pendingCount,
+        },
+        { label: "Documents", icon: <DocumentsIcon />, href: "/documents" },
+        { label: "Reports", icon: <ReportsIcon />, href: "/reports" },
+      ],
+    },
+    {
+      title: "SETTINGS",
+      items: [
+        { label: "Profile", icon: <ProfileIcon />, href: "/profile" },
+      ],
+    },
+  ];
+
   const [collapsed, setCollapsed] = useState(false);
   const pathname = usePathname();
 
@@ -105,6 +136,11 @@ export function Sidebar() {
                   >
                     <span className="w-5 h-5 flex-shrink-0">{item.icon}</span>
                     {!collapsed && <span>{item.label}</span>}
+                    {!collapsed && item.badge && item.badge > 0 ? (
+                      <span className="ml-auto text-[10px] font-bold bg-emerald-primary text-white px-1.5 py-0.5 rounded-full min-w-[18px] text-center">
+                        {item.badge}
+                      </span>
+                    ) : null}
                   </Link>
                 );
               })}
@@ -227,6 +263,17 @@ function OrgIcon() {
     <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
       <rect x="2" y="7" width="20" height="14" rx="2" ry="2" />
       <path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16" />
+    </svg>
+  );
+}
+
+function RegistrationsIcon() {
+  return (
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" />
+      <circle cx="8.5" cy="7" r="4" />
+      <line x1="20" y1="8" x2="20" y2="14" />
+      <line x1="23" y1="11" x2="17" y2="11" />
     </svg>
   );
 }

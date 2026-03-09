@@ -108,13 +108,21 @@ export default function LoginPage() {
             </Button>
           </form>
 
-          <div className="mt-5 text-center">
+          <div className="mt-5 space-y-3 text-center">
             <a
               href="#"
-              className="text-sm text-secondary hover:text-emerald-primary transition-colors"
+              className="block text-sm text-secondary hover:text-emerald-primary transition-colors"
             >
               Forgot password?
             </a>
+            <div className="border-t border-border pt-3">
+              <a
+                href="/register"
+                className="inline-flex items-center justify-center gap-2 w-full px-4 py-2.5 rounded-[var(--radius-button)] border border-emerald-primary text-emerald-primary text-sm font-semibold hover:bg-emerald-primary/5 transition-colors"
+              >
+                Register as Agent
+              </a>
+            </div>
           </div>
         </div>
 

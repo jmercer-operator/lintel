@@ -44,6 +44,7 @@ export async function updateSession(request: NextRequest) {
   // Public routes — always accessible
   if (
     pathname.startsWith("/login") ||
+    pathname.startsWith("/register") ||
     pathname.startsWith("/auth") ||
     pathname.startsWith("/api/auth")
   ) {

@@ -122,6 +122,18 @@ export default function PortalClient({
         <div className="max-w-4xl mx-auto flex items-center justify-between px-5 h-14">
           <Logo size="sm" />
           <div className="flex items-center gap-3">
+            <a
+              href="/portal"
+              className="text-sm text-emerald-primary font-semibold"
+            >
+              Home
+            </a>
+            <a
+              href="/portal/profile"
+              className="text-sm text-secondary hover:text-emerald-primary transition-colors font-medium"
+            >
+              Profile
+            </a>
             <RoleSwitcher />
             <SignOutButton variant="minimal" />
             <div className="flex items-center gap-2">
