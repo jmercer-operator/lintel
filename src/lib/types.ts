@@ -398,6 +398,96 @@ export interface BuyerInterest {
   price?: number | null;
 }
 
+/* ─── Phase 2: Developer Intelligence Types ─── */
+
+export type SettlementStatus = 'not_applicable' | 'pending' | 'finance_pending' | 'finance_approved' | 'settling_soon' | 'settled' | 'fallen_over';
+export type SalesChannel = 'agent' | 'direct' | 'referral' | 'website' | 'event';
+
+export const SETTLEMENT_STATUS_LABELS: Record<SettlementStatus, string> = {
+  not_applicable: 'N/A',
+  pending: 'Pending',
+  finance_pending: 'Finance Pending',
+  finance_approved: 'Finance Approved',
+  settling_soon: 'Settling Soon',
+  settled: 'Settled',
+  fallen_over: 'Fallen Over',
+};
+
+export const SETTLEMENT_STATUS_COLORS: Record<SettlementStatus, { bg: string; text: string }> = {
+  not_applicable: { bg: 'bg-[#6B7A70]/10', text: 'text-[#6B7A70]' },
+  pending: { bg: 'bg-[#D4A855]/10', text: 'text-[#D4A855]' },
+  finance_pending: { bg: 'bg-[#E07858]/10', text: 'text-[#E07858]' },
+  finance_approved: { bg: 'bg-[#1A9E6F]/10', text: 'text-[#1A9E6F]' },
+  settling_soon: { bg: 'bg-[#D4A855]/10', text: 'text-[#D4A855]' },
+  settled: { bg: 'bg-[#2D8C5A]/10', text: 'text-[#2D8C5A]' },
+  fallen_over: { bg: 'bg-[#E05252]/10', text: 'text-[#E05252]' },
+};
+
+export interface PortfolioStats {
+  totalValue: number;
+  soldValue: number;
+  availableValue: number;
+  sellThroughRate: number;
+  averagePrice: number;
+  salesVelocity: number;
+  totalLots: number;
+  soldLots: number;
+}
+
+export interface ProjectSalesBreakdown {
+  project_id: string;
+  project_name: string;
+  total: number;
+  available: number;
+  eoi: number;
+  under_contract: number;
+  exchanged: number;
+  settled: number;
+  revenue: number;
+  sell_through: number;
+}
+
+export interface AgentPerformanceRow {
+  agent_id: string;
+  agent_name: string;
+  agency: string | null;
+  total_sales: number;
+  revenue: number;
+  avg_sale_price: number;
+  commission_due: number;
+}
+
+export interface CommissionSummary {
+  totalCommissionsDue: number;
+  commissionsOnSettled: number;
+  commissionsPending: number;
+}
+
+export interface SettlementRow {
+  stock_id: string;
+  lot_number: string;
+  project_name: string;
+  customer_name: string | null;
+  exchange_date: string | null;
+  settlement_date: string | null;
+  settlement_status: SettlementStatus;
+  days_until: number | null;
+  price: number | null;
+}
+
+export interface HeatmapProject {
+  project_id: string;
+  project_name: string;
+  lots: Array<{
+    id: string;
+    lot_number: string;
+    status: StockStatus;
+    level: number | null;
+    bedrooms: number;
+    price: number | null;
+  }>;
+}
+
 export interface PipelineContact {
   id: string;
   first_name: string;
