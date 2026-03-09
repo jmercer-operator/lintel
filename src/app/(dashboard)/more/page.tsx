@@ -2,10 +2,9 @@ import Link from "next/link";
 
 const menuItems = [
   { label: "Contacts", href: "/contacts", icon: "👥", desc: "Manage contacts" },
-  { label: "Pipeline", href: "/pipeline", icon: "📊", desc: "Sales pipeline" },
   { label: "Documents", href: "/documents", icon: "📄", desc: "Project documents" },
   { label: "Reports", href: "/reports", icon: "📈", desc: "Reports & analytics" },
-  { label: "Profile", href: "/profile", icon: "👤", desc: "Your profile" },
+  { label: "Registrations", href: "/registrations", icon: "📋", desc: "Agent registrations" },
 ];
 
 export default function MorePage() {

@@ -55,7 +55,6 @@ export function Sidebar() {
       title: "SALES",
       items: [
         { label: "Stock", icon: <StockIcon />, href: "/stock" },
-        { label: "Pipeline", icon: <PipelineIcon />, href: "/pipeline" },
         { label: "Contacts", icon: <ContactsIcon />, href: "/contacts" },
       ],
     },
@@ -73,12 +72,7 @@ export function Sidebar() {
         { label: "Reports", icon: <ReportsIcon />, href: "/reports" },
       ],
     },
-    {
-      title: "SETTINGS",
-      items: [
-        { label: "Profile", icon: <ProfileIcon />, href: "/profile" },
-      ],
-    },
+
   ];
 
   const [collapsed, setCollapsed] = useState(false);
