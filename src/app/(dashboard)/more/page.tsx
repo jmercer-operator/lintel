@@ -1,7 +1,7 @@
 import Link from "next/link";
 
 const menuItems = [
-  { label: "Contacts", href: "/contacts", icon: "👥", desc: "Manage contacts" },
+  { label: "Customers", href: "/contacts", icon: "👥", desc: "Manage customers" },
   { label: "Documents", href: "/documents", icon: "📄", desc: "Project documents" },
   { label: "Reports", href: "/reports", icon: "📈", desc: "Reports & analytics" },
   { label: "Registrations", href: "/registrations", icon: "📋", desc: "Agent registrations" },

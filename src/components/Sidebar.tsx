@@ -55,7 +55,7 @@ export function Sidebar() {
       title: "SALES",
       items: [
         { label: "Stock", icon: <StockIcon />, href: "/stock" },
-        { label: "Contacts", icon: <ContactsIcon />, href: "/contacts" },
+        { label: "Customers", icon: <ContactsIcon />, href: "/contacts" },
       ],
     },
     {

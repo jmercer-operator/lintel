@@ -71,8 +71,8 @@ export function ContactsClient({ contacts, agents, projects, currentTab, searchQ
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6">
         <div>
-          <h1 className="text-2xl font-bold text-heading">Contacts</h1>
-          <p className="text-secondary text-sm mt-1">{contacts.length} contact{contacts.length !== 1 ? "s" : ""}</p>
+          <h1 className="text-2xl font-bold text-heading">Customers</h1>
+          <p className="text-secondary text-sm mt-1">{contacts.length} customer{contacts.length !== 1 ? "s" : ""}</p>
         </div>
         <div className="flex gap-3">
           <Button variant="secondary" onClick={() => setShowMailGroup(!showMailGroup)}>
@@ -81,7 +81,7 @@ export function ContactsClient({ contacts, agents, projects, currentTab, searchQ
           </Button>
           <Button onClick={() => setShowAddModal(true)}>
             <PlusIcon />
-            Add Contact
+            Add Customer
           </Button>
         </div>
       </div>
@@ -138,8 +138,8 @@ export function ContactsClient({ contacts, agents, projects, currentTab, searchQ
             <thead>
               <tr className="border-b border-border bg-bg-alt/50">
                 <th className="text-left px-4 py-3 font-semibold text-secondary text-xs uppercase tracking-wider">Name</th>
-                <th className="text-left px-4 py-3 font-semibold text-secondary text-xs uppercase tracking-wider hidden md:table-cell">Email</th>
-                <th className="text-left px-4 py-3 font-semibold text-secondary text-xs uppercase tracking-wider hidden lg:table-cell">Phone</th>
+                <th className="text-left px-4 py-3 font-semibold text-secondary text-xs uppercase tracking-wider">Email</th>
+                <th className="text-left px-4 py-3 font-semibold text-secondary text-xs uppercase tracking-wider">Phone</th>
                 <th className="text-left px-4 py-3 font-semibold text-secondary text-xs uppercase tracking-wider">Type</th>
                 <th className="text-left px-4 py-3 font-semibold text-secondary text-xs uppercase tracking-wider hidden lg:table-cell">Agent</th>
                 <th className="text-left px-4 py-3 font-semibold text-secondary text-xs uppercase tracking-wider hidden lg:table-cell">Project</th>
@@ -164,8 +164,8 @@ export function ContactsClient({ contacts, agents, projects, currentTab, searchQ
                     <td className="px-4 py-3 font-medium text-heading">
                       {contact.first_name} {contact.last_name}
                     </td>
-                    <td className="px-4 py-3 text-secondary hidden md:table-cell">{contact.email || "—"}</td>
-                    <td className="px-4 py-3 text-secondary hidden lg:table-cell font-mono text-xs">{contact.phone || "—"}</td>
+                    <td className="px-4 py-3 text-secondary text-xs">{contact.email || "—"}</td>
+                    <td className="px-4 py-3 text-secondary font-mono text-xs">{contact.phone || "—"}</td>
                     <td className="px-4 py-3">
                       <ClassificationBadge classification={contact.computed_classification} />
                     </td>
