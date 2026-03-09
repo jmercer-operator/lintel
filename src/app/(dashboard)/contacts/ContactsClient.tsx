@@ -61,7 +61,7 @@ export function ContactsClient({ contacts, agents, projects, currentTab, searchQ
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
     a.href = url;
-    a.download = `contacts-${currentTab}-${new Date().toISOString().slice(0, 10)}.csv`;
+    a.download = `customers-${currentTab}-${new Date().toISOString().slice(0, 10)}.csv`;
     a.click();
     URL.revokeObjectURL(url);
   };
@@ -150,7 +150,7 @@ export function ContactsClient({ contacts, agents, projects, currentTab, searchQ
               {contacts.length === 0 ? (
                 <tr>
                   <td colSpan={9} className="px-4 py-12 text-center text-secondary">
-                    No contacts found
+                    No customers found
                   </td>
                 </tr>
               ) : (

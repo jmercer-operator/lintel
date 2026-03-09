@@ -23,11 +23,14 @@ export function RoleSwitcher() {
   }, []);
 
   // Keep active in sync if pathname changes (e.g. navigated via sidebar)
+  // Note: /agents is a STAFF page (agent list), /agent is the AGENT portal
   useEffect(() => {
     if (pathname === "/agent" || pathname.startsWith("/agent/")) {
       setActive("agent");
     } else if (pathname.startsWith("/portal")) {
       setActive("client");
+    } else if (pathname === "/agents" || pathname.startsWith("/agents/") || pathname === "/" || pathname.startsWith("/projects") || pathname.startsWith("/stock") || pathname.startsWith("/contacts") || pathname.startsWith("/documents") || pathname.startsWith("/registrations") || pathname.startsWith("/more") || pathname.startsWith("/profile")) {
+      setActive("staff");
     }
   }, [pathname]);
 

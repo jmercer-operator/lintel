@@ -33,7 +33,7 @@ export function ContactDetailClient({ contact, agents, clientDocuments }: Props)
       {/* Back + Header */}
       <Link href="/contacts" className="inline-flex items-center gap-1 text-sm text-secondary hover:text-heading mb-4">
         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><polyline points="15 18 9 12 15 6"/></svg>
-        Contacts
+        Customers
       </Link>
 
       <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4 mb-8">

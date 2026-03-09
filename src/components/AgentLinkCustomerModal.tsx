@@ -229,7 +229,7 @@ export function AgentLinkCustomerModal({
 
           <div className="max-h-64 overflow-y-auto border border-border rounded-[var(--radius-input)]">
             {filteredContacts.length === 0 ? (
-              <p className="text-sm text-secondary text-center py-6">No contacts found</p>
+              <p className="text-sm text-secondary text-center py-6">No clients found</p>
             ) : (
               filteredContacts.map((c) => {
                 const isSelected = selectedContactIds.has(c.id);

@@ -224,7 +224,7 @@ export default function ProfileClient({ contact }: ProfileClientProps) {
       <footer className="border-t border-border/50 mt-12">
         <div className="max-w-4xl mx-auto px-5 py-8 flex flex-col sm:flex-row items-center justify-between gap-3">
           <p className="text-xs text-muted">
-            © {new Date().getFullYear()} M Property. Powered by{" "}
+            © {new Date().getFullYear()} Powered by{" "}
             <span className="font-semibold">
               <span className="text-emerald-primary font-extrabold">L</span>
               <span className="text-body font-medium">INTEL</span>
