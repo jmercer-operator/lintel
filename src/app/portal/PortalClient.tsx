@@ -122,19 +122,17 @@ export default function PortalClient({
 
   return (
     <div className="min-h-screen bg-white">
-      {/* Top Bar — minimal */}
-      <header className="sticky top-0 z-30 bg-white/90 backdrop-blur-md border-b border-border/50">
-        <div className="max-w-4xl mx-auto flex items-center justify-between px-5 h-14">
-          <a href="/portal"><Logo size="sm" /></a>
-          <div className="flex items-center gap-3">
-            <RoleSwitcher />
-            <a href="/portal/profile" className="cursor-pointer">
-              <div className="w-8 h-8 rounded-full bg-emerald-primary flex items-center justify-center text-white text-xs font-semibold">
-                {contact.first_name[0]}
-                {contact.last_name[0]}
-              </div>
-            </a>
-          </div>
+      {/* Top Bar — consistent with staff/agent */}
+      <header className="h-16 bg-white border-b border-border flex items-center justify-between px-5 sticky top-0 z-30">
+        <a href="/portal"><Logo size="sm" /></a>
+        <div className="flex items-center gap-2">
+          <RoleSwitcher />
+          <a href="/portal/profile" className="cursor-pointer">
+            <div className="w-8 h-8 rounded-full bg-emerald-primary flex items-center justify-center text-white text-xs font-semibold">
+              {contact.first_name[0]}
+              {contact.last_name[0]}
+            </div>
+          </a>
         </div>
       </header>
 
