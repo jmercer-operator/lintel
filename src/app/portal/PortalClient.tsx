@@ -77,6 +77,11 @@ export default function PortalClient({
       doc.document_type === "Trust Receipt"
   );
 
+  // Deposit is "paid" only when a Trust Receipt document has been uploaded
+  const hasTrustReceipt = clientDocuments.some(
+    (doc) => doc.document_type === "Trust Receipt"
+  );
+
   // Progress pictures & videos from project — normalise both old string and new JSON formats
   const progressPictures = (project?.progress_pictures ?? []).map((item) =>
     typeof item === "string" ? item : item.url
@@ -360,18 +365,18 @@ export default function PortalClient({
                   {stock.price ? `$${Math.round(stock.price).toLocaleString("en-AU")}` : "—"}
                 </p>
               </div>
-              <div className={`p-4 rounded-2xl border ${stock.deposit_paid ? 'bg-emerald-primary/5 border-emerald-primary/10' : 'bg-amber-50 border-amber-200'}`}>
+              <div className={`p-4 rounded-2xl border ${hasTrustReceipt ? 'bg-emerald-primary/5 border-emerald-primary/10' : 'bg-bg border-border'}`}>
                 <p className="text-xs text-secondary font-medium uppercase tracking-wider mb-1">Deposit</p>
                 <p className="text-xl sm:text-2xl font-bold text-heading">
                   {stock.deposit_amount ? `$${Math.round(Number(stock.deposit_amount)).toLocaleString("en-AU")}` : "—"}
                 </p>
-                {stock.deposit_paid ? (
+                {hasTrustReceipt ? (
                   <span className="inline-flex items-center gap-1 text-xs font-semibold text-emerald-primary mt-1">
                     <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12" /></svg>
                     Paid
                   </span>
                 ) : (
-                  <span className="text-xs font-semibold text-amber-600 mt-1">Pending</span>
+                  <span></span>
                 )}
               </div>
             </div>
