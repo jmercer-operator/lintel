@@ -24,22 +24,6 @@ export async function POST(request: Request) {
       .eq("id", id)
       .single();
 
-    // Must-link-customer rule: cannot change from Available unless customer linked
-    if (currentLot?.status === "Available" && status !== "Available" && !forceOverride) {
-      const { data: links } = await supabase
-        .from("contact_stock")
-        .select("id")
-        .eq("stock_id", id)
-        .limit(1);
-
-      if (!links || links.length === 0) {
-        return NextResponse.json(
-          { error: "Link a customer before changing status" },
-          { status: 400 }
-        );
-      }
-    }
-
     const { error } = await supabase
       .from("stock")
       .update({ status, updated_at: new Date().toISOString() })
@@ -47,6 +31,14 @@ export async function POST(request: Request) {
 
     if (error) {
       return NextResponse.json({ error: error.message }, { status: 500 });
+    }
+
+    // If status changed to Available, unlink all customers from this lot
+    if (status === "Available") {
+      await supabase
+        .from("contact_stock")
+        .delete()
+        .eq("stock_id", id);
     }
 
     return NextResponse.json({ success: true });
