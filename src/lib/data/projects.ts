@@ -94,6 +94,27 @@ export async function createProject(data: {
     .single();
 
   if (error) throw error;
+
+  // Auto-seed default milestones for new projects
+  const DEFAULT_MILESTONES = [
+    { name: "Planning Approved", description: "Council planning permit approved", sort_order: 1 },
+    { name: "Demolition Complete", description: "Site cleared and ready for construction", sort_order: 2 },
+    { name: "Foundation & Slab", description: "Concrete slab poured", sort_order: 3 },
+    { name: "Frame & Structure", description: "Structural framing complete", sort_order: 4 },
+    { name: "Lock Up", description: "External walls, roof, windows installed", sort_order: 5 },
+    { name: "Fit Out", description: "Internal fit-out and services", sort_order: 6 },
+    { name: "Completion", description: "Occupancy certificate issued", sort_order: 7 },
+  ];
+
+  await supabase.from("project_milestones").insert(
+    DEFAULT_MILESTONES.map((m) => ({
+      ...m,
+      project_id: project.id,
+      org_id: data.org_id,
+      status: "upcoming",
+    }))
+  );
+
   return project as Project;
 }
 
