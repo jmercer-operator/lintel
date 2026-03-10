@@ -97,13 +97,16 @@ export async function createProject(data: {
 
   // Auto-seed default milestones for new projects
   const DEFAULT_MILESTONES = [
-    { name: "Planning Approved", description: "Council planning permit approved", sort_order: 1 },
-    { name: "Demolition Complete", description: "Site cleared and ready for construction", sort_order: 2 },
-    { name: "Foundation & Slab", description: "Concrete slab poured", sort_order: 3 },
-    { name: "Frame & Structure", description: "Structural framing complete", sort_order: 4 },
-    { name: "Lock Up", description: "External walls, roof, windows installed", sort_order: 5 },
-    { name: "Fit Out", description: "Internal fit-out and services", sort_order: 6 },
-    { name: "Completion", description: "Occupancy certificate issued", sort_order: 7 },
+    { name: "Planning Approval Achieved", description: "Statutory planning approvals secured for the development.", sort_order: 1 },
+    { name: "Site Establishment & Preparation", description: "Site mobilisation and preparatory works underway.", sort_order: 2 },
+    { name: "Construction Commenced", description: "Main building construction works formally underway.", sort_order: 3 },
+    { name: "Structural Framework Progressing", description: "Primary structural works advancing.", sort_order: 4 },
+    { name: "Structure Topped Out", description: "Building reaches its highest structural point.", sort_order: 5 },
+    { name: "Building Envelope Progress", description: "Façade, glazing, and external works progressing.", sort_order: 6 },
+    { name: "Internal Construction & Services", description: "Mechanical, electrical, plumbing, and internal works underway.", sort_order: 7 },
+    { name: "Interior Finishes & Fit Out", description: "Apartments and common areas entering final finishing stages.", sort_order: 8 },
+    { name: "Final Certification & Authority Approvals", description: "Completion inspections and regulatory certifications underway.", sort_order: 9 },
+    { name: "Subdivision Complete & Titles Released", description: "Plan of subdivision registered and individual property titles issued.", sort_order: 10 },
   ];
 
   await supabase.from("project_milestones").insert(
