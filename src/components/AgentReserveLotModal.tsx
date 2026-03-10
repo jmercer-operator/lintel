@@ -95,48 +95,6 @@ export function AgentReserveLotModal({ open, onClose, projects, agents, agentCon
     setSaving(false);
   }
 
-  async function handleNewCustomerSubmit(formData: FormData) {
-    if (!selectedLot || !selectedProject) return;
-    setSaving(true);
-    setError(null);
-    try {
-      // Create contact
-      const res = await fetch("/api/agent/create-client", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          first_name: formData.get("first_name"),
-          last_name: formData.get("last_name"),
-          email: formData.get("email"),
-          phone: formData.get("phone"),
-          agentId,
-        }),
-      });
-      const contact = await res.json();
-      if (contact.id) {
-        // Update lot status
-        await fetch("/api/agent/update-lot-status", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ stockId: selectedLot.id, status: "Under Contract", agentId }),
-        });
-        // Link customer
-        await fetch("/api/agent/link-customer", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ stockId: selectedLot.id, contactId: contact.id, projectId: selectedProject.id }),
-        });
-        router.refresh();
-        onClose();
-      } else {
-        setError(contact.error || "Failed to create customer");
-      }
-    } catch {
-      setError("Failed to reserve lot");
-    }
-    setSaving(false);
-  }
-
   const filteredContacts = search.length > 0
     ? agentContacts.filter(c => `${c.first_name} ${c.last_name} ${c.email || ""} ${c.phone || ""}`.toLowerCase().includes(search.toLowerCase()))
     : agentContacts;
@@ -236,34 +194,21 @@ export function AgentReserveLotModal({ open, onClose, projects, agents, agentCon
         </div>
       )}
 
-      {/* New Customer Form */}
+      {/* New Customer Form — Full ContactForm */}
       {step === "customer" && customerMode === "new" && (
         <div>
           <button onClick={() => setCustomerMode("choose")} className="text-xs text-emerald-primary hover:underline mb-3 cursor-pointer">← Back</button>
-          <form onSubmit={(e) => { e.preventDefault(); handleNewCustomerSubmit(new FormData(e.currentTarget)); }} className="space-y-3">
-            <div className="grid grid-cols-2 gap-3">
-              <div>
-                <label className="block text-xs font-medium text-heading mb-1">First Name *</label>
-                <input type="text" name="first_name" required className="w-full px-3 py-2 text-sm rounded-lg border border-border focus:border-emerald-primary focus:ring-1 focus:ring-emerald-primary focus:outline-none" />
-              </div>
-              <div>
-                <label className="block text-xs font-medium text-heading mb-1">Last Name *</label>
-                <input type="text" name="last_name" required className="w-full px-3 py-2 text-sm rounded-lg border border-border focus:border-emerald-primary focus:ring-1 focus:ring-emerald-primary focus:outline-none" />
-              </div>
-            </div>
-            <div>
-              <label className="block text-xs font-medium text-heading mb-1">Email</label>
-              <input type="email" name="email" className="w-full px-3 py-2 text-sm rounded-lg border border-border focus:border-emerald-primary focus:ring-1 focus:ring-emerald-primary focus:outline-none" />
-            </div>
-            <div>
-              <label className="block text-xs font-medium text-heading mb-1">Phone</label>
-              <input type="tel" name="phone" className="w-full px-3 py-2 text-sm rounded-lg border border-border focus:border-emerald-primary focus:ring-1 focus:ring-emerald-primary focus:outline-none" />
-            </div>
-            <div className="flex justify-end gap-2 pt-2">
-              <Button type="button" variant="secondary" onClick={() => setCustomerMode("choose")}>Cancel</Button>
-              <Button type="submit" disabled={saving}>{saving ? "Reserving..." : "Reserve Lot"}</Button>
-            </div>
-          </form>
+          <ContactForm
+            agents={agents}
+            defaultStockId={selectedLot?.id}
+            defaultProjectId={selectedProject?.id}
+            defaultAgentId={agentId}
+            onSuccess={() => {
+              router.refresh();
+              onClose();
+            }}
+            onCancel={() => setCustomerMode("choose")}
+          />
         </div>
       )}
 

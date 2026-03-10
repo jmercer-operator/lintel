@@ -256,6 +256,14 @@ export function AgentLotsClient({ stock, stockCustomerMap, agentContacts, agents
           open={linkModalOpen}
           onClose={() => {
             setLinkModalOpen(false);
+            // Clear the pending change for this lot since modal was dismissed
+            if (linkModalLot) {
+              setPendingChanges((prev) => {
+                const next = { ...prev };
+                delete next[linkModalLot.id];
+                return next;
+              });
+            }
             setLinkModalLot(null);
           }}
           lotId={linkModalLot.id}

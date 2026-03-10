@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef, useEffect, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { Card } from "@/components/Card";
 import { Button } from "@/components/Button";
@@ -74,11 +74,55 @@ export function DocumentsTab({ projectId, categories, documents, clientDocuments
   const [error, setError] = useState<string | null>(null);
   const fileInputRefs = useRef<Record<string, HTMLInputElement | null>>({});
   const [sharingDoc, setSharingDoc] = useState<ProjectDocument | null>(null);
+  const [isDragOver, setIsDragOver] = useState(false);
+  const dropZoneRef = useRef<HTMLDivElement>(null);
+  const dropFileInputRef = useRef<HTMLInputElement>(null);
+  const dragCounterRef = useRef(0);
 
   const docsByCategory = categories.map((cat) => ({
     category: cat,
     docs: documents.filter((d) => d.category_id === cat.id),
   }));
+
+  // Default category for drop zone uploads (first category or Marketing Collateral)
+  const defaultCategory = categories.find(c => c.name === "Marketing Collateral") || categories[0];
+
+  const handleDropZoneDragEnter = useCallback((e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    dragCounterRef.current++;
+    if (e.dataTransfer.types.includes("Files")) {
+      setIsDragOver(true);
+    }
+  }, []);
+
+  const handleDropZoneDragLeave = useCallback((e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    dragCounterRef.current--;
+    if (dragCounterRef.current <= 0) {
+      dragCounterRef.current = 0;
+      setIsDragOver(false);
+    }
+  }, []);
+
+  const handleDropZoneDragOver = useCallback((e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    e.dataTransfer.dropEffect = "copy";
+  }, []);
+
+  const handleDropZoneDrop = useCallback(async (e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDragOver(false);
+    dragCounterRef.current = 0;
+
+    const files = e.dataTransfer.files;
+    if (!files || files.length === 0 || !defaultCategory) return;
+
+    await handleUpload(defaultCategory.id, defaultCategory.name, files);
+  }, [defaultCategory]);
 
   async function handleUpload(categoryId: string, categoryName: string, files: FileList) {
     setUploading(categoryId);
@@ -172,6 +216,62 @@ export function DocumentsTab({ projectId, categories, documents, clientDocuments
       {error && (
         <div className="px-4 py-3 bg-error/10 border border-error/20 rounded-[var(--radius-input)] text-error text-sm">
           {error}
+        </div>
+      )}
+
+      {/* Drag & Drop Upload Zone */}
+      {canUploadDocument(role) && defaultCategory && (
+        <div
+          ref={dropZoneRef}
+          onDragEnter={handleDropZoneDragEnter}
+          onDragLeave={handleDropZoneDragLeave}
+          onDragOver={handleDropZoneDragOver}
+          onDrop={handleDropZoneDrop}
+          onClick={() => dropFileInputRef.current?.click()}
+          className={`
+            relative flex flex-col items-center justify-center gap-2 py-8 px-4
+            border-2 border-dashed rounded-[var(--radius-card)] cursor-pointer
+            transition-all duration-200
+            ${isDragOver
+              ? "border-[#1A9E6F] bg-[#1A9E6F]/5 scale-[1.01]"
+              : "border-border hover:border-[#1A9E6F]/50 hover:bg-bg-alt/50"
+            }
+          `}
+        >
+          <input
+            ref={dropFileInputRef}
+            type="file"
+            multiple
+            className="hidden"
+            onChange={(e) => {
+              const files = e.target.files;
+              if (files && files.length > 0 && defaultCategory) {
+                handleUpload(defaultCategory.id, defaultCategory.name, files);
+              }
+              e.target.value = "";
+            }}
+          />
+          <svg
+            width="32"
+            height="32"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke={isDragOver ? "#1A9E6F" : "currentColor"}
+            strokeWidth="1.5"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            className={`${isDragOver ? "text-[#1A9E6F]" : "text-muted"} transition-colors`}
+          >
+            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+            <polyline points="17 8 12 3 7 8" />
+            <line x1="12" y1="3" x2="12" y2="15" />
+          </svg>
+          <p className={`text-sm font-medium ${isDragOver ? "text-[#1A9E6F]" : "text-secondary"} transition-colors`}>
+            {isDragOver ? "Release to upload" : "Drop files here to upload"}
+          </p>
+          <p className="text-xs text-muted">
+            or click to browse · uploads to {defaultCategory.name}
+          </p>
         </div>
       )}
 
