@@ -127,7 +127,7 @@ export function AgentLinkCustomerModal({
       {mode === "choose" && (
         <div className="space-y-4">
           <p className="text-sm text-secondary">
-            Link a customer to Lot {lotNumber}. The lot status will automatically change to EOI.
+            Link a customer to Lot {lotNumber} to proceed with the reservation.
           </p>
           <div className="grid grid-cols-2 gap-4">
             <button
