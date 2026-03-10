@@ -237,72 +237,50 @@ export default function PortalClient({
               </h3>
             </div>
 
-            {/* Milestone dots */}
-            <div className="flex items-center justify-between mb-4 overflow-x-auto pb-2">
-              {milestones.map((m, i) => (
-                <div
-                  key={m.id}
-                  className="flex flex-col items-center min-w-0 flex-1"
-                >
-                  {/* Connector line + dot */}
-                  <div className="flex items-center w-full">
-                    {i > 0 && (
-                      <div
-                        className={`flex-1 h-0.5 ${
-                          m.status === "completed" || m.status === "in_progress"
-                            ? "bg-emerald-primary"
-                            : "bg-border"
-                        }`}
-                      />
+            {/* Milestone stepper */}
+            <div className="relative mb-4">
+              {/* Background track */}
+              <div className="absolute top-3 sm:top-3.5 left-0 right-0 h-0.5 bg-border" />
+              {/* Filled track */}
+              {(() => {
+                const lastCompletedIdx = milestones.reduce((acc, m, i) => m.status === "completed" ? i : acc, -1);
+                const inProgressIdx = milestones.findIndex(m => m.status === "in_progress");
+                const fillTo = inProgressIdx >= 0 ? inProgressIdx : lastCompletedIdx;
+                const totalSteps = milestones.length - 1;
+                const fillPercent = totalSteps > 0 && fillTo >= 0 ? (fillTo / totalSteps) * 100 : 0;
+                return <div className="absolute top-3 sm:top-3.5 left-0 h-0.5 bg-emerald-primary transition-all duration-500" style={{ width: `${fillPercent}%` }} />;
+              })()}
+              {/* Steps */}
+              <div className="relative grid" style={{ gridTemplateColumns: `repeat(${milestones.length}, 1fr)` }}>
+                {milestones.map((m) => (
+                  <div key={m.id} className="flex flex-col items-center">
+                    {/* Dot */}
+                    {m.status === "completed" ? (
+                      <div className="w-6 h-6 sm:w-7 sm:h-7 rounded-full bg-emerald-primary flex items-center justify-center z-10">
+                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
+                          <polyline points="20 6 9 17 4 12" />
+                        </svg>
+                      </div>
+                    ) : m.status === "in_progress" ? (
+                      <div className="w-6 h-6 sm:w-7 sm:h-7 rounded-full bg-emerald-primary/20 flex items-center justify-center z-10">
+                        <div className="w-3 h-3 sm:w-3.5 sm:h-3.5 rounded-full bg-emerald-primary animate-pulse" />
+                      </div>
+                    ) : (
+                      <div className="w-6 h-6 sm:w-7 sm:h-7 rounded-full border-2 border-border bg-white z-10" />
                     )}
-                    <div className="relative flex-shrink-0">
-                      {m.status === "completed" ? (
-                        <div className="w-6 h-6 sm:w-7 sm:h-7 rounded-full bg-emerald-primary flex items-center justify-center">
-                          <svg
-                            width="12"
-                            height="12"
-                            viewBox="0 0 24 24"
-                            fill="none"
-                            stroke="white"
-                            strokeWidth="3"
-                            strokeLinecap="round"
-                            strokeLinejoin="round"
-                          >
-                            <polyline points="20 6 9 17 4 12" />
-                          </svg>
-                        </div>
-                      ) : m.status === "in_progress" ? (
-                        <div className="w-6 h-6 sm:w-7 sm:h-7 rounded-full bg-emerald-primary/20 flex items-center justify-center">
-                          <div className="w-3 h-3 sm:w-3.5 sm:h-3.5 rounded-full bg-emerald-primary animate-pulse" />
-                        </div>
-                      ) : (
-                        <div className="w-6 h-6 sm:w-7 sm:h-7 rounded-full border-2 border-border bg-white" />
-                      )}
-                    </div>
-                    {i < milestones.length - 1 && (
-                      <div
-                        className={`flex-1 h-0.5 ${
-                          m.status === "completed"
-                            ? "bg-emerald-primary"
-                            : "bg-border"
-                        }`}
-                      />
-                    )}
-                  </div>
-                  {/* Label */}
-                  <span
-                    className={`mt-2 text-[10px] sm:text-xs text-center leading-tight hidden sm:block ${
+                    {/* Label */}
+                    <span className={`mt-2 text-[9px] sm:text-[11px] text-center leading-tight px-0.5 ${
                       m.status === "in_progress"
                         ? "font-semibold text-emerald-primary"
                         : m.status === "completed"
                         ? "text-secondary"
                         : "text-muted"
-                    }`}
-                  >
-                    {m.name}
-                  </span>
-                </div>
-              ))}
+                    }`}>
+                      {m.name}
+                    </span>
+                  </div>
+                ))}
+              </div>
             </div>
 
             {/* Current milestone info */}
