@@ -65,9 +65,12 @@ export function AgentLotsClient({ stock, stockCustomerMap, agentContacts, agents
 
   function handleStatusSelect(lotId: string, newStatus: string, currentStatus: string) {
     const lot = stock.find((l) => l.id === lotId);
+    const preCommitStatuses = ["Available", "EOI"];
+    const isFromPreCommit = preCommitStatuses.includes(currentStatus);
+    const isToPostCommit = !preCommitStatuses.includes(newStatus);
 
-    // If changing from Available to something else and no customer linked, show modal
-    if (lot && currentStatus === "Available" && newStatus !== "Available" && !stockCustomerMap[lotId]) {
+    // If changing FROM Available/EOI TO any post-commit status and no customer linked, show modal
+    if (lot && isFromPreCommit && isToPostCommit && !stockCustomerMap[lotId]) {
       setLinkModalLot(lot);
       setLinkModalOpen(true);
       return;

@@ -884,18 +884,82 @@ export async function updateMilestoneAction(formData: FormData) {
   const status = formData.get("status") as string;
   const target_date = (formData.get("target_date") as string) || null;
   const completed_date = (formData.get("completed_date") as string) || null;
+  const completed_at = formData.get("completed_at") as string | null;
+  const name = formData.get("name") as string | null;
+  const description = formData.get("description") as string | null;
   const project_id = formData.get("project_id") as string;
 
   if (!id) return { error: "Milestone ID is required" };
 
   const updates: Record<string, unknown> = { updated_at: new Date().toISOString() };
   if (status) updates.status = status;
-  if (target_date !== undefined) updates.target_date = target_date;
-  if (completed_date !== undefined) updates.completed_date = completed_date;
+  if (target_date !== undefined) updates.target_date = target_date || null;
+  if (completed_date !== undefined) updates.completed_date = completed_date || null;
+  if (completed_at !== undefined && completed_at !== null) updates.completed_at = completed_at || null;
+  if (name) updates.name = name;
+  if (description !== undefined && description !== null) updates.description = description || null;
 
   const { error } = await supabase
     .from("project_milestones")
     .update(updates)
+    .eq("id", id);
+
+  if (error) return { error: error.message };
+
+  revalidatePath(`/projects/${project_id}`);
+  return { success: true };
+}
+
+export async function createMilestoneAction(formData: FormData) {
+  const supabase = await createClient();
+
+  const project_id = formData.get("project_id") as string;
+  const name = formData.get("name") as string;
+  const description = (formData.get("description") as string) || null;
+  const status = (formData.get("status") as string) || "upcoming";
+  const target_date = (formData.get("target_date") as string) || null;
+
+  if (!project_id || !name) return { error: "Project and name are required" };
+
+  // Get max sort_order for this project
+  const { data: existing } = await supabase
+    .from("project_milestones")
+    .select("sort_order")
+    .eq("project_id", project_id)
+    .order("sort_order", { ascending: false })
+    .limit(1);
+
+  const nextOrder = existing && existing.length > 0 ? (existing[0].sort_order || 0) + 1 : 0;
+
+  const { error } = await supabase
+    .from("project_milestones")
+    .insert({
+      project_id,
+      org_id: DEFAULT_ORG_ID,
+      name,
+      description,
+      status,
+      sort_order: nextOrder,
+      target_date,
+    });
+
+  if (error) return { error: error.message };
+
+  revalidatePath(`/projects/${project_id}`);
+  return { success: true };
+}
+
+export async function deleteMilestoneAction(formData: FormData) {
+  const supabase = await createClient();
+
+  const id = formData.get("id") as string;
+  const project_id = formData.get("project_id") as string;
+
+  if (!id) return { error: "Milestone ID is required" };
+
+  const { error } = await supabase
+    .from("project_milestones")
+    .delete()
     .eq("id", id);
 
   if (error) return { error: error.message };

@@ -444,6 +444,7 @@ export interface ProjectSalesBreakdown {
   exchanged: number;
   settled: number;
   revenue: number;
+  sold_value: number;
   sell_through: number;
 }
 

@@ -97,12 +97,15 @@ export async function getProjectSalesBreakdown(): Promise<ProjectSalesBreakdown[
         exchanged: 0,
         settled: 0,
         revenue: 0,
+        sold_value: 0,
         sell_through: 0,
       });
     }
     const p = projectMap.get(pid)!;
     p.total++;
     const price = Number(item.price) || 0;
+    // Revenue = total value of ALL stock in the project
+    p.revenue += price;
     switch (item.status) {
       case "Available":
         p.available++;
@@ -112,15 +115,14 @@ export async function getProjectSalesBreakdown(): Promise<ProjectSalesBreakdown[
         break;
       case "Under Contract":
         p.under_contract++;
-        p.revenue += price;
         break;
       case "Exchanged":
         p.exchanged++;
-        p.revenue += price;
+        // Sold Value = only "Exchanged" status
+        p.sold_value += price;
         break;
       case "Settled":
         p.settled++;
-        p.revenue += price;
         break;
     }
   }

@@ -12,6 +12,7 @@ export interface ProjectMilestone {
   sort_order: number;
   target_date: string | null;
   completed_date: string | null;
+  completed_at: string | null;
   created_at: string;
   updated_at: string;
 }

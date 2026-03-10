@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, Fragment } from "react";
 import Link from "next/link";
 import { Card } from "@/components/Card";
 import { StatusBadge } from "@/components/StatusBadge";
@@ -72,13 +72,13 @@ function SectionHeader({ title, subtitle }: { title: string; subtitle?: string }
   );
 }
 
-/* ─── Heatmap Status Colors ─── */
+/* ─── Heatmap Status Colors — distinct per status ─── */
 const HEATMAP_COLORS: Record<StockStatus, { bg: string; border: string }> = {
-  Available: { bg: "bg-[#E2E8E4]", border: "border-[#B8C4BC]" },
-  EOI: { bg: "bg-[#D4A855]/30", border: "border-[#D4A855]" },
-  "Under Contract": { bg: "bg-[#1A9E6F]/40", border: "border-[#1A9E6F]" },
-  Exchanged: { bg: "bg-[#147A56]/50", border: "border-[#147A56]" },
-  Settled: { bg: "bg-[#6B7A70]/40", border: "border-[#6B7A70]" },
+  Available: { bg: "bg-[#E5E7EB]", border: "border-[#D1D5DB]" },
+  EOI: { bg: "bg-[#D4A855]", border: "border-[#C49A4A]" },
+  "Under Contract": { bg: "bg-[#1A9E6F]", border: "border-[#168A60]" },
+  Exchanged: { bg: "bg-[#0F766E]", border: "border-[#0D6660]" },
+  Settled: { bg: "bg-[#1F2937]", border: "border-[#111827]" },
 };
 
 /* ─── Sort helpers ─── */
@@ -101,6 +101,27 @@ export function ReportsClient({
     key: "revenue",
     asc: false,
   });
+
+  // Settlement pipeline: group by project, all expanded by default
+  const settlementByProject = (() => {
+    const groups: Record<string, { projectName: string; rows: typeof settlementPipeline }> = {};
+    for (const s of settlementPipeline) {
+      if (!groups[s.project_name]) {
+        groups[s.project_name] = { projectName: s.project_name, rows: [] };
+      }
+      groups[s.project_name].rows.push(s);
+    }
+    return Object.values(groups);
+  })();
+  const [collapsedProjects, setCollapsedProjects] = useState<Set<string>>(new Set());
+  function toggleProjectCollapse(projectName: string) {
+    setCollapsedProjects((prev) => {
+      const next = new Set(prev);
+      if (next.has(projectName)) next.delete(projectName);
+      else next.add(projectName);
+      return next;
+    });
+  }
 
   // Sort agents
   const sortedAgents = [...agentPerformance].sort((a, b) => {
@@ -161,10 +182,64 @@ export function ReportsClient({
 
   return (
     <div className="p-4 md:p-6 lg:p-8 space-y-8 max-w-[1400px] mx-auto">
+      {/* Print styles */}
+      <style jsx global>{`
+        @media print {
+          /* Hide navigation, sidebar, topbar, bottom tabs */
+          nav, aside, [data-sidebar], [data-topbar], [data-bottomtabs],
+          .sidebar, .topbar, .bottom-tabs, header:not(.print-header),
+          [class*="Sidebar"], [class*="TopBar"], [class*="BottomTabs"] {
+            display: none !important;
+          }
+          /* Hide the print button itself */
+          .print-button { display: none !important; }
+          /* Show LINTEL branding header */
+          .print-header { display: block !important; }
+          /* Clean formatting */
+          body { background: white !important; color: black !important; font-size: 11pt; }
+          main, [class*="main"] { margin: 0 !important; padding: 0 !important; max-width: 100% !important; }
+          /* Ensure tables don't break */
+          table { page-break-inside: avoid; }
+          tr { page-break-inside: avoid; }
+          thead { display: table-header-group; }
+          /* Cards clean */
+          [class*="Card"], [class*="card"] {
+            box-shadow: none !important;
+            border: 1px solid #E2E8E4 !important;
+            break-inside: avoid;
+          }
+          section { break-inside: avoid; }
+          /* Proper margins */
+          @page { margin: 1.5cm; }
+        }
+      `}</style>
+
+      {/* Print-only LINTEL branding header */}
+      <div className="print-header hidden">
+        <div style={{ borderBottom: "2px solid #1A9E6F", paddingBottom: "12px", marginBottom: "24px" }}>
+          <span style={{ fontSize: "24px", fontWeight: 800, letterSpacing: "0.08em", color: "#1A9E6F" }}>L</span>
+          <span style={{ fontSize: "24px", fontWeight: 500, letterSpacing: "0.08em", color: "#2D3B32" }}>INTEL</span>
+          <span style={{ fontSize: "12px", color: "#6B7A70", marginLeft: "16px" }}>Reports</span>
+        </div>
+      </div>
+
       {/* Page Header */}
-      <div>
-        <h1 className="text-2xl font-bold text-[#151E18]">Reports</h1>
-        <p className="text-sm text-[#6B7A70] mt-1">Developer intelligence dashboard</p>
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="text-2xl font-bold text-[#151E18]">Reports</h1>
+          <p className="text-sm text-[#6B7A70] mt-1">Developer intelligence dashboard</p>
+        </div>
+        <button
+          onClick={() => window.print()}
+          className="print-button inline-flex items-center gap-2 px-4 py-2.5 text-sm font-semibold rounded-[var(--radius-button,8px)] border border-[#E2E8E4] bg-white text-[#2D3B32] hover:bg-[#F0F5F2] transition-colors cursor-pointer"
+        >
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <polyline points="6 9 6 2 18 2 18 9" />
+            <path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2" />
+            <rect x="6" y="14" width="12" height="8" />
+          </svg>
+          Print Report
+        </button>
       </div>
 
       {/* ─── 2a. Portfolio Overview ─── */}
@@ -234,6 +309,9 @@ export function ReportsClient({
                   Revenue
                   <SortIcon active={projectSort.key === "revenue"} asc={projectSort.asc} />
                 </Th>
+                <Th className="text-right">
+                  Sold Value
+                </Th>
                 <Th onClick={() => toggleProjectSort("sell_through")} className="text-right">
                   Sell-through
                   <SortIcon active={projectSort.key === "sell_through"} asc={projectSort.asc} />
@@ -263,6 +341,9 @@ export function ReportsClient({
                   <td className="py-3 px-3 text-right font-mono font-semibold text-[#151E18]">
                     {formatPrice(p.revenue)}
                   </td>
+                  <td className="py-3 px-3 text-right font-mono font-semibold text-[#1A9E6F]">
+                    {formatPrice(p.sold_value)}
+                  </td>
                   <td className="py-3 px-3 text-right font-mono">
                     <span
                       className={
@@ -276,7 +357,7 @@ export function ReportsClient({
               ))}
               {sortedProjects.length === 0 && (
                 <tr>
-                  <td colSpan={9} className="py-8 text-center text-[#B8C4BC]">
+                  <td colSpan={10} className="py-8 text-center text-[#B8C4BC]">
                     No project data available
                   </td>
                 </tr>
@@ -381,80 +462,82 @@ export function ReportsClient({
       <section>
         <SectionHeader
           title="Settlement Pipeline"
-          subtitle="Upcoming settlements for exchanged lots"
+          subtitle="Upcoming settlements for exchanged lots — grouped by project"
         />
         {settlementPipeline.length > 0 ? (
           <Card padding="sm" className="overflow-x-auto">
             <table className="w-full text-sm">
               <thead>
                 <tr className="border-b border-[#E2E8E4]">
-                  <Th className="text-left">Customer</Th>
-                  <Th className="text-left">Lot</Th>
-                  <Th className="text-left">Project</Th>
-                  <Th className="text-left">Exchange Date</Th>
+                  <Th className="text-left">Lot Number</Th>
+                  <Th className="text-right">Contract Price</Th>
                   <Th className="text-left">Settlement Date</Th>
-                  <Th className="text-left">Status</Th>
+                  <Th className="text-left">Customer Name</Th>
                   <Th className="text-right">Days Until</Th>
                 </tr>
               </thead>
               <tbody>
-                {settlementPipeline.map((s) => {
-                  const urgencyClass =
-                    s.days_until !== null && s.days_until < 0
-                      ? "text-[#E05252] font-bold"
-                      : s.days_until !== null && s.days_until <= 7
-                      ? "text-[#E05252]"
-                      : s.days_until !== null && s.days_until <= 30
-                      ? "text-[#D4A855]"
-                      : "text-[#2D3B32]";
-
+                {settlementByProject.map((group) => {
+                  const isCollapsed = collapsedProjects.has(group.projectName);
                   return (
-                    <tr
-                      key={s.stock_id}
-                      className="border-b border-[#F0F5F2] hover:bg-[#FAFCFB] transition-colors"
-                    >
-                      <td className="py-3 px-3 font-medium text-[#151E18]">
-                        {s.customer_name || "—"}
-                      </td>
-                      <td className="py-3 px-3 font-mono text-[#2D3B32]">
-                        {s.lot_number}
-                      </td>
-                      <td className="py-3 px-3 text-[#2D3B32]">{s.project_name}</td>
-                      <td className="py-3 px-3 font-mono text-[#6B7A70]">
-                        {s.exchange_date
-                          ? new Date(s.exchange_date).toLocaleDateString("en-AU", {
-                              day: "numeric",
-                              month: "short",
-                              year: "numeric",
-                            })
-                          : "—"}
-                      </td>
-                      <td className="py-3 px-3 font-mono text-[#2D3B32]">
-                        {s.settlement_date
-                          ? new Date(s.settlement_date).toLocaleDateString("en-AU", {
-                              day: "numeric",
-                              month: "short",
-                              year: "numeric",
-                            })
-                          : "—"}
-                      </td>
-                      <td className="py-3 px-3">
-                        <span
-                          className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium ${
-                            SETTLEMENT_STATUS_COLORS[s.settlement_status]?.bg || ""
-                          } ${SETTLEMENT_STATUS_COLORS[s.settlement_status]?.text || ""}`}
-                        >
-                          {SETTLEMENT_STATUS_LABELS[s.settlement_status] || s.settlement_status}
-                        </span>
-                      </td>
-                      <td className={`py-3 px-3 text-right font-mono font-semibold ${urgencyClass}`}>
-                        {s.days_until !== null
-                          ? s.days_until < 0
-                            ? `${Math.abs(s.days_until)}d overdue`
-                            : `${s.days_until}d`
-                          : "—"}
-                      </td>
-                    </tr>
+                    <Fragment key={group.projectName}>
+                      <tr
+                        className="bg-[#F0F5F2] cursor-pointer hover:bg-[#E2E8E4] transition-colors"
+                        onClick={() => toggleProjectCollapse(group.projectName)}
+                      >
+                        <td colSpan={5} className="py-3 px-3">
+                          <div className="flex items-center gap-2">
+                            <span className="text-xs text-[#6B7A70] select-none">
+                              {isCollapsed ? "▶" : "▼"}
+                            </span>
+                            <span className="font-semibold text-[#151E18]">{group.projectName}</span>
+                            <span className="text-xs text-[#6B7A70] font-mono">
+                              {group.rows.length} settlement{group.rows.length !== 1 ? "s" : ""}
+                            </span>
+                          </div>
+                        </td>
+                      </tr>
+                      {!isCollapsed && group.rows.map((s) => {
+                        const urgencyClass =
+                          s.days_until !== null && s.days_until < 0
+                            ? "text-[#E05252] font-bold"
+                            : s.days_until !== null && s.days_until <= 7
+                            ? "text-[#E05252]"
+                            : s.days_until !== null && s.days_until <= 30
+                            ? "text-[#D4A855]"
+                            : "text-[#2D3B32]";
+                        return (
+                          <tr
+                            key={s.stock_id}
+                            className="border-b border-[#F0F5F2] hover:bg-[#FAFCFB] transition-colors"
+                          >
+                            <td className="py-3 px-3 pl-8 font-mono text-[#2D3B32]">{s.lot_number}</td>
+                            <td className="py-3 px-3 text-right font-mono font-semibold text-[#151E18]">
+                              {s.price != null ? formatPrice(s.price) : "—"}
+                            </td>
+                            <td className="py-3 px-3 font-mono text-[#2D3B32]">
+                              {s.settlement_date
+                                ? new Date(s.settlement_date).toLocaleDateString("en-AU", {
+                                    day: "numeric",
+                                    month: "short",
+                                    year: "numeric",
+                                  })
+                                : "—"}
+                            </td>
+                            <td className="py-3 px-3 font-medium text-[#151E18]">
+                              {s.customer_name || "—"}
+                            </td>
+                            <td className={`py-3 px-3 text-right font-mono font-semibold ${urgencyClass}`}>
+                              {s.days_until !== null
+                                ? s.days_until < 0
+                                  ? `${Math.abs(s.days_until)}d overdue`
+                                  : `${s.days_until}d`
+                                : "—"}
+                            </td>
+                          </tr>
+                        );
+                      })}
+                    </Fragment>
                   );
                 })}
               </tbody>
@@ -511,7 +594,9 @@ export function ReportsClient({
                     `}
                     title={`Lot ${lot.lot_number} — ${lot.status} — ${lot.bedrooms}BR — ${formatPrice(lot.price)}`}
                   >
-                    <span className="text-[10px] md:text-xs font-mono font-semibold text-[#2D3B32]/70">
+                    <span className={`text-[10px] md:text-xs font-mono font-semibold ${
+                      lot.status === "Available" ? "text-[#2D3B32]/70" : "text-white/90"
+                    }`}>
                       {lot.lot_number}
                     </span>
                   </div>
