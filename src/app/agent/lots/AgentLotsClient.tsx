@@ -71,6 +71,7 @@ export function AgentLotsClient({ stock, stockCustomerMap, agentContacts, agents
 
     // If changing FROM Available/EOI TO any post-commit status and no customer linked, show modal
     if (lot && isFromPreCommit && isToPostCommit && !stockCustomerMap[lotId]) {
+      setPendingChanges((prev) => ({ ...prev, [lotId]: newStatus }));
       setLinkModalLot(lot);
       setLinkModalOpen(true);
       return;

@@ -46,6 +46,17 @@ export function ProjectsClient({ projects }: ProjectsClientProps) {
               className="hover:shadow-card-hover cursor-pointer transition-shadow h-full"
             >
               <div className="space-y-4">
+                {/* Hero Render */}
+                {project.hero_render_url && (
+                  <div className="-mx-5 -mt-5 mb-2 overflow-hidden rounded-t-[14px]">
+                    <img
+                      src={project.hero_render_url}
+                      alt={project.name}
+                      className="w-full h-36 object-cover"
+                    />
+                  </div>
+                )}
+
                 {/* Project name + status */}
                 <div className="flex items-start justify-between gap-3">
                   <div>

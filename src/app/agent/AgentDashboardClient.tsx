@@ -9,8 +9,22 @@ import { Modal } from "@/components/Modal";
 import { ContactForm } from "@/components/ContactForm";
 import { PipelineBoard } from "@/components/PipelineBoard";
 import { FollowUpsList } from "@/components/FollowUpsList";
+import { AgentReserveLotModal } from "@/components/AgentReserveLotModal";
 import type { StockItem, StockStats, StockStatus, Agent, PipelineStage, PipelineContact, FollowUp } from "@/lib/types";
 import { formatPrice, timeAgo } from "@/lib/types";
+
+interface AgentContact {
+  id: string;
+  first_name: string;
+  last_name: string;
+  email: string | null;
+  phone: string | null;
+}
+
+interface ProjectOption {
+  id: string;
+  name: string;
+}
 
 interface Props {
   agentName: string;
@@ -22,10 +36,13 @@ interface Props {
   pipelineStats: Record<PipelineStage, number>;
   pipelineContacts: PipelineContact[];
   followUps: FollowUp[];
+  agentProjects: ProjectOption[];
+  agentContacts: AgentContact[];
 }
 
-export function AgentDashboardClient({ agentName, stats, clientCount, recentLots, agents, agentId, pipelineStats, pipelineContacts, followUps }: Props) {
+export function AgentDashboardClient({ agentName, stats, clientCount, recentLots, agents, agentId, pipelineStats, pipelineContacts, followUps, agentProjects, agentContacts }: Props) {
   const [showAddClient, setShowAddClient] = useState(false);
+  const [showReserveLot, setShowReserveLot] = useState(false);
   const router = useRouter();
 
   return (
@@ -77,6 +94,16 @@ export function AgentDashboardClient({ agentName, stats, clientCount, recentLots
             <line x1="23" y1="11" x2="17" y2="11" />
           </svg>
           Add Client
+        </button>
+        <button
+          onClick={() => setShowReserveLot(true)}
+          className="inline-flex items-center gap-2 px-4 py-2.5 bg-[#D4A855] text-white rounded-[var(--radius-button)] text-sm font-semibold hover:bg-[#C49A4A] transition-colors cursor-pointer"
+        >
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" />
+            <polyline points="9 22 9 12 15 12 15 22" />
+          </svg>
+          Reserve a Lot
         </button>
         <Link
           href="/agent/lots"
@@ -173,6 +200,16 @@ export function AgentDashboardClient({ agentName, stats, clientCount, recentLots
           defaultAgentId={agentId}
         />
       </Modal>
+
+      {/* Reserve Lot Modal */}
+      <AgentReserveLotModal
+        open={showReserveLot}
+        onClose={() => setShowReserveLot(false)}
+        projects={agentProjects}
+        agents={agents}
+        agentContacts={agentContacts}
+        agentId={agentId}
+      />
     </div>
   );
 }
