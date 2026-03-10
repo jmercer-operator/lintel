@@ -9,6 +9,7 @@ export interface UserProfile {
   last_name: string | null;
   avatar_url: string | null;
   auth_user_id: string | null;
+  is_admin: boolean;
   created_at: string;
   updated_at: string;
 }

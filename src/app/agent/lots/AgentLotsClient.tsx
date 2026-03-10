@@ -43,6 +43,9 @@ export function AgentLotsClient({ stock, stockCustomerMap, agentContacts, agents
   const [isPending, startTransition] = useTransition();
   const router = useRouter();
 
+  // Collapsible project groups state — keyed by projectId, default expanded (false = not collapsed)
+  const [collapsed, setCollapsed] = useState<Record<string, boolean>>({});
+
   // Link customer modal state
   const [linkModalOpen, setLinkModalOpen] = useState(false);
   const [linkModalLot, setLinkModalLot] = useState<LotWithCommission | null>(null);
@@ -97,7 +100,7 @@ export function AgentLotsClient({ stock, stockCustomerMap, agentContacts, agents
       const res = await fetch("/api/agent/update-lot-status", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ id: lotId, status: newStatus }),
+        body: JSON.stringify({ id: lotId, status: newStatus, agentId }),
       });
       if (res.ok) {
         setSavedId(lotId);
@@ -167,12 +170,26 @@ export function AgentLotsClient({ stock, stockCustomerMap, agentContacts, agents
           </div>
         </Card>
       ) : (
-        filteredGroups.map((group) => (
+        filteredGroups.map((group) => {
+          const isCollapsed = collapsed[group.projectId] ?? false;
+          return (
           <div key={group.projectId}>
-            <div className="flex items-center gap-2 mb-3">
+            <button
+              type="button"
+              onClick={() => setCollapsed((prev) => ({ ...prev, [group.projectId]: !isCollapsed }))}
+              className="flex items-center gap-2 mb-3 cursor-pointer group w-full text-left"
+            >
+              <span className="text-muted transition-transform duration-200" style={{ transform: isCollapsed ? "rotate(0deg)" : "rotate(90deg)", display: "inline-block" }}>
+                ▸
+              </span>
               <ProjectLogo logoUrl={group.projectLogoUrl} name={group.projectName} size={24} />
-              <h2 className="text-base font-semibold text-heading">{group.projectName}</h2>
-            </div>
+              <h2 className="text-base font-semibold text-heading group-hover:text-emerald-primary transition-colors">{group.projectName}</h2>
+              <span className="text-xs text-muted ml-1">({group.lots.length} lot{group.lots.length !== 1 ? "s" : ""})</span>
+            </button>
+            <div
+              className="transition-all duration-300 ease-in-out overflow-hidden"
+              style={{ maxHeight: isCollapsed ? "0px" : "5000px", opacity: isCollapsed ? 0 : 1 }}
+            >
             <Card padding="sm">
               <div className="overflow-x-auto">
                 <table className="w-full text-sm">
@@ -244,8 +261,10 @@ export function AgentLotsClient({ stock, stockCustomerMap, agentContacts, agents
                 </table>
               </div>
             </Card>
+            </div>
           </div>
-        ))
+          );
+        })
       )}
 
       {/* Link Customer Modal — always mounted to avoid React re-mount issues */}
