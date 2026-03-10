@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useTransition } from "react";
+import { useState, useTransition, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/Button";
 import { Modal } from "@/components/Modal";
@@ -44,6 +44,16 @@ export function AgentLinkCustomerModal({
   const [error, setError] = useState<string | null>(null);
   const [search, setSearch] = useState("");
   const [selectedContactIds, setSelectedContactIds] = useState<Set<string>>(new Set());
+
+  // Reset internal state when modal opens
+  useEffect(() => {
+    if (open) {
+      setMode("choose");
+      setError(null);
+      setSearch("");
+      setSelectedContactIds(new Set());
+    }
+  }, [open]);
 
   const filteredContacts =
     search.length > 0

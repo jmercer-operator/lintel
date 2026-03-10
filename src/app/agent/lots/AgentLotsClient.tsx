@@ -65,14 +65,13 @@ export function AgentLotsClient({ stock, stockCustomerMap, agentContacts, agents
 
   function handleStatusSelect(lotId: string, newStatus: string, currentStatus: string) {
     const lot = stock.find((l) => l.id === lotId);
-    const preCommitStatuses = ["Available", "EOI"];
-    const isToPostCommit = !preCommitStatuses.includes(newStatus);
 
-    // If changing TO any post-commit status (Under Contract / Exchanged), always show link modal
-    if (lot && isToPostCommit) {
+    // If changing to any different status (except back to Available), show link customer modal
+    if (lot && newStatus !== currentStatus && newStatus !== "Available") {
       setPendingChanges((prev) => ({ ...prev, [lotId]: newStatus }));
+      // Set lot first, then open modal in next tick to avoid React batching issues
       setLinkModalLot(lot);
-      setLinkModalOpen(true);
+      setTimeout(() => setLinkModalOpen(true), 0);
       return;
     }
 
@@ -249,30 +248,27 @@ export function AgentLotsClient({ stock, stockCustomerMap, agentContacts, agents
         ))
       )}
 
-      {/* Link Customer Modal */}
-      {linkModalLot && (
-        <AgentLinkCustomerModal
-          open={linkModalOpen}
-          onClose={() => {
-            setLinkModalOpen(false);
-            // Clear the pending change for this lot since modal was dismissed
-            if (linkModalLot) {
-              setPendingChanges((prev) => {
-                const next = { ...prev };
-                delete next[linkModalLot.id];
-                return next;
-              });
-            }
-            setLinkModalLot(null);
-          }}
-          lotId={linkModalLot.id}
-          lotNumber={linkModalLot.lot_number}
-          projectId={linkModalLot.project_id}
-          agents={agents}
-          agentContacts={agentContacts}
-          agentId={agentId}
-        />
-      )}
+      {/* Link Customer Modal — always mounted to avoid React re-mount issues */}
+      <AgentLinkCustomerModal
+        open={linkModalOpen}
+        onClose={() => {
+          setLinkModalOpen(false);
+          // Clear the pending change for this lot since modal was dismissed
+          if (linkModalLot) {
+            setPendingChanges((prev) => {
+              const next = { ...prev };
+              delete next[linkModalLot.id];
+              return next;
+            });
+          }
+        }}
+        lotId={linkModalLot?.id || ""}
+        lotNumber={linkModalLot?.lot_number || ""}
+        projectId={linkModalLot?.project_id || ""}
+        agents={agents}
+        agentContacts={agentContacts}
+        agentId={agentId}
+      />
     </div>
   );
 }
