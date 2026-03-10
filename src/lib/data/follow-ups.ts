@@ -26,7 +26,7 @@ function mapRow(row: Record<string, unknown>): FollowUp {
   };
 }
 
-export async function getFollowUps(agentId?: string): Promise<FollowUp[]> {
+export async function getFollowUps(agentId?: string, options?: { todayOnly?: boolean }): Promise<FollowUp[]> {
   const supabase = await createClient();
 
   let query = supabase
@@ -42,6 +42,12 @@ export async function getFollowUps(agentId?: string): Promise<FollowUp[]> {
 
   if (agentId) {
     query = query.eq("agent_id", agentId);
+  }
+
+  // Filter to today and overdue only (for staff dashboard "Today's Follow-ups")
+  if (options?.todayOnly) {
+    const today = new Date().toISOString().split("T")[0];
+    query = query.lte("due_date", today);
   }
 
   const { data, error } = await query;

@@ -17,7 +17,7 @@ export default async function DashboardPage({ searchParams }: PageProps) {
     getStockForDashboard(projectId, status),
     getPipelineStats(),
     getPipelineContacts(),
-    getFollowUps(),
+    getFollowUps(undefined, { todayOnly: true }),
   ]);
 
   return (
