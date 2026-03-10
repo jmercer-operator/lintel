@@ -56,6 +56,13 @@ export function MilestonesTab({ projectId, milestones }: Props) {
     form.set("id", editing.id);
     form.set("project_id", projectId);
 
+    // Auto-set status to completed if completion date is filled
+    const completedDate = form.get("completed_date") as string;
+    if (completedDate && form.get("status") !== "completed") {
+      form.set("status", "completed");
+      form.set("completed_at", new Date(completedDate).toISOString());
+    }
+
     const result = await updateMilestoneAction(form);
     if (result.error) {
       setError(result.error);
@@ -212,35 +219,45 @@ export function MilestonesTab({ projectId, milestones }: Props) {
                     </div>
 
                     {/* Content */}
-                    <div
-                      className={`flex-1 min-w-0 pt-1 ${canEditMilestone(role) ? "cursor-pointer hover:bg-bg-alt -mx-2 px-2 rounded-[var(--radius-input)] transition-colors" : ""}`}
-                      onClick={() => canEditMilestone(role) && setEditing(milestone)}
-                    >
-                      <div className="flex items-center gap-3">
-                        <p className={`text-sm font-semibold ${
-                          milestone.status === "completed" ? "text-heading" :
-                          milestone.status === "in_progress" ? "text-emerald-primary" :
-                          "text-muted"
-                        }`}>
-                          {milestone.name}
-                        </p>
-                        <MilestoneStatusBadge status={milestone.status} />
+                    <div className="flex-1 min-w-0 pt-1">
+                      <div
+                        className={`${canEditMilestone(role) ? "cursor-pointer hover:bg-bg-alt -mx-2 px-2 rounded-[var(--radius-input)] transition-colors" : ""}`}
+                        onClick={() => canEditMilestone(role) && setEditing(milestone)}
+                      >
+                        <div className="flex items-center gap-3">
+                          <p className={`text-sm font-semibold ${
+                            milestone.status === "completed" ? "text-heading" :
+                            milestone.status === "in_progress" ? "text-emerald-primary" :
+                            "text-muted"
+                          }`}>
+                            {milestone.name}
+                          </p>
+                          <MilestoneStatusBadge status={milestone.status} />
+                        </div>
+                        {milestone.description && (
+                          <p className="text-xs text-secondary mt-1">{milestone.description}</p>
+                        )}
+                        <div className="flex gap-4 mt-1.5">
+                          {milestone.target_date && (
+                            <p className="text-xs text-muted font-mono">
+                              Target: {new Date(milestone.target_date).toLocaleDateString("en-AU", { day: "numeric", month: "short", year: "numeric" })}
+                            </p>
+                          )}
+                          {milestone.completed_date && (
+                            <p className="text-xs text-emerald-primary font-mono">
+                              Completed: {new Date(milestone.completed_date).toLocaleDateString("en-AU", { day: "numeric", month: "short", year: "numeric" })}
+                            </p>
+                          )}
+                        </div>
                       </div>
-                      {milestone.description && (
-                        <p className="text-xs text-secondary mt-1">{milestone.description}</p>
+                      {canEditMilestone(role) && milestone.status !== "completed" && (
+                        <button
+                          onClick={(e) => { e.stopPropagation(); handleToggleStatus(milestone); }}
+                          className="mt-2 px-3 py-1 text-xs font-semibold text-emerald-primary bg-emerald-primary/10 rounded-full hover:bg-emerald-primary/20 transition-colors cursor-pointer"
+                        >
+                          ✓ Mark Complete
+                        </button>
                       )}
-                      <div className="flex gap-4 mt-1.5">
-                        {milestone.target_date && (
-                          <p className="text-xs text-muted font-mono">
-                            Target: {new Date(milestone.target_date).toLocaleDateString("en-AU", { day: "numeric", month: "short", year: "numeric" })}
-                          </p>
-                        )}
-                        {milestone.completed_date && (
-                          <p className="text-xs text-emerald-primary font-mono">
-                            Completed: {new Date(milestone.completed_date).toLocaleDateString("en-AU", { day: "numeric", month: "short", year: "numeric" })}
-                          </p>
-                        )}
-                      </div>
                     </div>
                   </div>
                 ))}

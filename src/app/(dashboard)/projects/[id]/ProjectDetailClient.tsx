@@ -134,6 +134,17 @@ export function ProjectDetailClient({
         </div>
       </div>
 
+      {/* Hero Render */}
+      {project.hero_render_url && (
+        <div className="rounded-[14px] overflow-hidden border border-border">
+          <img
+            src={project.hero_render_url}
+            alt={project.name}
+            className="w-full h-48 sm:h-64 lg:h-80 object-cover"
+          />
+        </div>
+      )}
+
       {/* Metric Cards */}
       <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-4">
         {metricConfig.map((metric) => (

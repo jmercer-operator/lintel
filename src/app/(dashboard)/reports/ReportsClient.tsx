@@ -77,7 +77,7 @@ const HEATMAP_COLORS: Record<StockStatus, { bg: string; border: string }> = {
   Available: { bg: "bg-[#E5E7EB]", border: "border-[#D1D5DB]" },
   EOI: { bg: "bg-[#D4A855]", border: "border-[#C49A4A]" },
   "Under Contract": { bg: "bg-[#1A9E6F]", border: "border-[#168A60]" },
-  Exchanged: { bg: "bg-[#0F766E]", border: "border-[#0D6660]" },
+  Exchanged: { bg: "bg-[#7C3AED]", border: "border-[#6D28D9]" },
   Settled: { bg: "bg-[#1F2937]", border: "border-[#111827]" },
 };
 
