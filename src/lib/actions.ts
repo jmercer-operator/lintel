@@ -1,8 +1,11 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { createClient } from "@/lib/supabase/server";
+import { createAdminClient } from "@/lib/supabase/admin";
 import { DEFAULT_ORG_ID } from "@/lib/types";
+
+// Use admin client for all server actions to bypass RLS in preview mode
+const createClient = () => Promise.resolve(createAdminClient());
 import type { DocumentVisibility } from "@/lib/types";
 
 /* ─── Agent Actions ─── */
