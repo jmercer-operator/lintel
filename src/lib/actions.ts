@@ -368,7 +368,7 @@ export async function createProjectAction(formData: FormData) {
   const num_hotel_keys = formData.get("num_hotel_keys") ? parseInt(formData.get("num_hotel_keys") as string) : null;
   const description = (formData.get("description") as string) || null;
 
-  const { error } = await supabase
+  const { data: project, error } = await supabase
     .from("projects")
     .insert({
       org_id: DEFAULT_ORG_ID,
@@ -385,11 +385,36 @@ export async function createProjectAction(formData: FormData) {
       num_commercial,
       num_hotel_keys,
       description,
-    });
+    })
+    .select()
+    .single();
 
   if (error) {
     return { error: error.message };
   }
+
+  // Auto-seed default milestones for new projects
+  const DEFAULT_MILESTONES = [
+    { name: "Planning Approval Achieved", description: "Statutory planning approvals secured for the development.", sort_order: 1 },
+    { name: "Site Establishment & Preparation", description: "Site mobilisation and preparatory works underway.", sort_order: 2 },
+    { name: "Construction Commenced", description: "Main building construction works formally underway.", sort_order: 3 },
+    { name: "Structural Framework Progressing", description: "Primary structural works advancing.", sort_order: 4 },
+    { name: "Structure Topped Out", description: "Building reaches its highest structural point.", sort_order: 5 },
+    { name: "Building Envelope Progress", description: "Façade, glazing, and external works progressing.", sort_order: 6 },
+    { name: "Internal Construction & Services", description: "Mechanical, electrical, plumbing, and internal works underway.", sort_order: 7 },
+    { name: "Interior Finishes & Fit Out", description: "Apartments and common areas entering final finishing stages.", sort_order: 8 },
+    { name: "Final Certification & Authority Approvals", description: "Completion inspections and regulatory certifications underway.", sort_order: 9 },
+    { name: "Subdivision Complete & Titles Released", description: "Plan of subdivision registered and individual property titles issued.", sort_order: 10 },
+  ];
+
+  await supabase.from("project_milestones").insert(
+    DEFAULT_MILESTONES.map((m) => ({
+      ...m,
+      project_id: project.id,
+      org_id: DEFAULT_ORG_ID,
+      status: "upcoming",
+    }))
+  );
 
   revalidatePath("/projects");
   revalidatePath("/");
