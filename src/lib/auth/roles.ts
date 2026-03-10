@@ -28,8 +28,12 @@ export function isPreviewMode(): boolean {
  */
 export function getCurrentUserRole(): UserRole {
   if (typeof window === "undefined") return "staff";
-  const stored = localStorage.getItem(ROLE_KEY);
-  if (stored === "staff" || stored === "agent" || stored === "client") return stored;
+
+  // Infer role from URL path — this is the source of truth
+  const path = window.location.pathname;
+  if (path.startsWith("/agent")) return "agent";
+  if (path.startsWith("/portal")) return "client";
+  // All other paths (/projects, /stock, /contacts, /agents, /reports, etc.) are staff
   return "staff";
 }
 
