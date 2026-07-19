@@ -768,15 +768,33 @@ export async function uploadClientDocumentAction(formData: FormData) {
 
   if (uploadError) return { error: uploadError.message };
 
+  // Attribute the document to the contact's linked lot/project when one exists.
+  const { data: link } = await supabase
+    .from("contact_stock")
+    .select("stock_id, project_id")
+    .eq("contact_id", contact_id)
+    .limit(1)
+    .maybeSingle();
+
+  // Buyers can only read visibility='client' rows (RLS); Exchanged Contract
+  // and Trust Receipt are the two types the portal surfaces to them.
+  const visibility =
+    document_type === "Exchanged Contract" || document_type === "Trust Receipt"
+      ? "client"
+      : "staff";
+
   const { error: dbError } = await supabase.from("client_documents").insert({
     contact_id,
     org_id: DEFAULT_ORG_ID,
+    name: file.name,
     document_type,
     file_name: file.name,
     file_path: filePath,
     file_size: file.size,
     mime_type: file.type || "application/octet-stream",
-    visibility: "staff",
+    stock_id: link?.stock_id ?? null,
+    project_id: link?.project_id ?? null,
+    visibility,
     uploaded_by: uploadedBy,
   });
 
