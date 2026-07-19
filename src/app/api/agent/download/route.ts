@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { createSignedUrl } from "@/lib/data/documents";
+import { createAuthorizedSignedUrl } from "@/lib/auth/document-access";
 
 export async function GET(request: Request) {
   const { searchParams } = new URL(request.url);
@@ -10,13 +10,9 @@ export async function GET(request: Request) {
     return NextResponse.json({ error: "path is required" }, { status: 400 });
   }
 
-  try {
-    const url = await createSignedUrl(bucket, path);
-    if (!url) {
-      return NextResponse.json({ error: "Failed to create download URL" }, { status: 500 });
-    }
-    return NextResponse.redirect(url);
-  } catch {
-    return NextResponse.json({ error: "Failed to create download URL" }, { status: 500 });
+  const result = await createAuthorizedSignedUrl(bucket, path);
+  if ("error" in result) {
+    return NextResponse.json({ error: result.error }, { status: result.status });
   }
+  return NextResponse.redirect(result.url);
 }

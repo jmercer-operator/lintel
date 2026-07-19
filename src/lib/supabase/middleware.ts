@@ -1,5 +1,6 @@
 import { createServerClient } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
+import { isPreviewAllowed } from "@/lib/auth/preview";
 
 export async function updateSession(request: NextRequest) {
   let supabaseResponse = NextResponse.next({
@@ -36,8 +37,8 @@ export async function updateSession(request: NextRequest) {
 
   const pathname = request.nextUrl.pathname;
 
-  // PREVIEW MODE: bypass auth when enabled
-  if (process.env.NEXT_PUBLIC_PREVIEW_MODE === "true") {
+  // PREVIEW MODE: bypass auth ONLY outside production (fails closed in prod).
+  if (isPreviewAllowed()) {
     return supabaseResponse;
   }
 
@@ -46,22 +47,26 @@ export async function updateSession(request: NextRequest) {
     pathname.startsWith("/login") ||
     pathname.startsWith("/register") ||
     pathname.startsWith("/auth") ||
-    pathname.startsWith("/api/auth")
+    pathname === "/robots.txt"
   ) {
-    // If already logged in, redirect away from login
+    // If already logged in with a known role, redirect away from login
     if (user && pathname.startsWith("/login")) {
-      // Determine role and redirect
       const role = await getUserRoleFromDB(supabase, user.id);
-      const redirectTo = getRoleRedirect(role);
-      const url = request.nextUrl.clone();
-      url.pathname = redirectTo;
-      return NextResponse.redirect(url);
+      if (role) {
+        const url = request.nextUrl.clone();
+        url.pathname = getRoleRedirect(role);
+        return NextResponse.redirect(url);
+      }
+      // Unmapped user: let them see /login (with error) rather than loop.
     }
     return supabaseResponse;
   }
 
-  // Not authenticated → redirect to login
+  // Not authenticated → redirect to login (401 for APIs)
   if (!user) {
+    if (pathname.startsWith("/api")) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
     const url = request.nextUrl.clone();
     url.pathname = "/login";
     return NextResponse.redirect(url);
@@ -70,22 +75,37 @@ export async function updateSession(request: NextRequest) {
   // Determine user role for route protection
   const role = await getUserRoleFromDB(supabase, user.id);
 
-  // Route protection by role
+  // FAIL CLOSED: authenticated but not mapped to staff/agent/client.
+  if (!role) {
+    if (pathname.startsWith("/api")) {
+      return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+    }
+    const url = request.nextUrl.clone();
+    url.pathname = "/login";
+    url.searchParams.set("error", "unprovisioned");
+    return NextResponse.redirect(url);
+  }
+
   // Staff can access everything
   if (role === "staff") {
     return supabaseResponse;
   }
 
-  // Agent can access /agent/* and /api/agent/*
+  // Agent can access /agent/* and /api/agent/* (+ shared APIs)
   if (role === "agent") {
     if (
       pathname.startsWith("/agent") ||
       pathname.startsWith("/api/agent") ||
-      pathname.startsWith("/api/portal")
+      pathname.startsWith("/api/portal") ||
+      pathname.startsWith("/api/notifications") ||
+      // Reserve-a-lot modal lists available lots; RLS scopes the results.
+      pathname.startsWith("/api/stock")
     ) {
       return supabaseResponse;
     }
-    // Redirect agent to their portal
+    if (pathname.startsWith("/api")) {
+      return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+    }
     const url = request.nextUrl.clone();
     url.pathname = "/agent";
     return NextResponse.redirect(url);
@@ -93,34 +113,37 @@ export async function updateSession(request: NextRequest) {
 
   // Client can access /portal/* and /api/portal/*
   if (role === "client") {
-    if (
-      pathname.startsWith("/portal") ||
-      pathname.startsWith("/api/portal")
-    ) {
+    if (pathname.startsWith("/portal") || pathname.startsWith("/api/portal")) {
       return supabaseResponse;
     }
-    // Redirect client to their portal
+    if (pathname.startsWith("/api")) {
+      return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+    }
     const url = request.nextUrl.clone();
     url.pathname = "/portal";
     return NextResponse.redirect(url);
   }
 
-  return supabaseResponse;
+  // Unknown role value — fail closed.
+  const url = request.nextUrl.clone();
+  url.pathname = "/login";
+  return NextResponse.redirect(url);
 }
 
 /**
  * Look up user role from DB tables. Lightweight check for middleware.
+ * Returns null when the user cannot be mapped (fail closed).
  */
 async function getUserRoleFromDB(
   supabase: ReturnType<typeof createServerClient>,
   authUserId: string
-): Promise<string> {
+): Promise<string | null> {
   // Check user_profiles (staff)
   const { data: profile } = await supabase
     .from("user_profiles")
     .select("role")
     .eq("auth_user_id", authUserId)
-    .single();
+    .maybeSingle();
 
   if (profile?.role === "staff") return "staff";
 
@@ -129,7 +152,7 @@ async function getUserRoleFromDB(
     .from("agents")
     .select("id")
     .eq("auth_user_id", authUserId)
-    .single();
+    .maybeSingle();
 
   if (agent) return "agent";
 
@@ -138,13 +161,15 @@ async function getUserRoleFromDB(
     .from("contacts")
     .select("id")
     .eq("auth_user_id", authUserId)
-    .single();
+    .maybeSingle();
 
   if (contact) return "client";
 
-  if (profile) return profile.role || "staff";
+  if (profile?.role === "agent" || profile?.role === "client") {
+    return profile.role;
+  }
 
-  return "staff";
+  return null;
 }
 
 function getRoleRedirect(role: string): string {

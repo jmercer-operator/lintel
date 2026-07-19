@@ -7,7 +7,7 @@ import { getDocumentCategories, getProjectDocuments, getClientDocumentsByProject
 import { getProjectMilestones } from "@/lib/data/milestones";
 import { DEFAULT_ORG_ID } from "@/lib/types";
 import { ProjectDetailClient } from "./ProjectDetailClient";
-import { createClient } from "@/lib/supabase/server";
+import { createDataClient } from "@/lib/supabase/data-client";
 
 interface PageProps {
   params: Promise<{ id: string }>;
@@ -35,9 +35,9 @@ export default async function ProjectDetailPage({ params, searchParams }: PagePr
   const stock = await getStock(id, statusFilter);
 
   // Build stock → contact name map
-  const supabase = await createClient();
+  const supabase = await createDataClient();
   const stockIds = stock.map(s => s.id);
-  let stockContactMap: Record<string, string> = {};
+  const stockContactMap: Record<string, string> = {};
   if (stockIds.length > 0) {
     const { data: contactStock } = await supabase
       .from("contact_stock")
@@ -68,6 +68,7 @@ export default async function ProjectDetailPage({ params, searchParams }: PagePr
     file_path: d.file_path,
     file_size: d.file_size,
     mime_type: d.mime_type,
+    uploader_name: d.uploader_name ?? null,
     created_at: d.created_at,
   }));
 

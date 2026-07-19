@@ -1,8 +1,8 @@
-import { createClient } from "@/lib/supabase/server";
+import { createDataClient } from "@/lib/supabase/data-client";
 import type { DocumentShare, DocumentShareType, DeliveryMethod } from "@/lib/types";
 
 export async function getDocumentShares(documentId: string): Promise<DocumentShare[]> {
-  const supabase = await createClient();
+  const supabase = await createDataClient();
   const { data, error } = await supabase
     .from("document_shares")
     .select("*")
@@ -17,7 +17,7 @@ export async function getDocumentShares(documentId: string): Promise<DocumentSha
 }
 
 export async function getSharesForRecipient(recipientId: string, recipientType: 'contact' | 'agent'): Promise<DocumentShare[]> {
-  const supabase = await createClient();
+  const supabase = await createDataClient();
   const { data, error } = await supabase
     .from("document_shares")
     .select("*")
@@ -40,7 +40,7 @@ export async function createDocumentShare(data: {
   shared_by?: string;
   delivery_method?: DeliveryMethod;
 }): Promise<{ error?: string }> {
-  const supabase = await createClient();
+  const supabase = await createDataClient();
   const { error } = await supabase.from("document_shares").insert({
     document_type: data.document_type,
     document_id: data.document_id,
@@ -55,7 +55,7 @@ export async function createDocumentShare(data: {
 }
 
 export async function markAsViewed(shareId: string): Promise<{ error?: string }> {
-  const supabase = await createClient();
+  const supabase = await createDataClient();
   const { error } = await supabase
     .from("document_shares")
     .update({ viewed_at: new Date().toISOString() })
@@ -69,7 +69,7 @@ export async function getProjectDocumentsForContact(
   projectIds: string[]
 ): Promise<Array<{ id: string; file_name: string; file_path: string; category_name?: string }>> {
   if (projectIds.length === 0) return [];
-  const supabase = await createClient();
+  const supabase = await createDataClient();
 
   const { data: docs, error } = await supabase
     .from("project_documents")
@@ -101,7 +101,7 @@ export async function getProjectDocumentsForContact(
 export async function getClientDocumentShareRecords(
   contactId: string
 ): Promise<DocumentShare[]> {
-  const supabase = await createClient();
+  const supabase = await createDataClient();
   const { data, error } = await supabase
     .from("document_shares")
     .select("*")
@@ -114,7 +114,7 @@ export async function getClientDocumentShareRecords(
 }
 
 export async function getShareCountForDocument(documentId: string): Promise<number> {
-  const supabase = await createClient();
+  const supabase = await createDataClient();
   const { count, error } = await supabase
     .from("document_shares")
     .select("*", { count: "exact", head: true })

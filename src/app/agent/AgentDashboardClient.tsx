@@ -198,6 +198,7 @@ export function AgentDashboardClient({ agentName, stats, clientCount, recentLots
           }}
           onCancel={() => setShowAddClient(false)}
           defaultAgentId={agentId}
+          scope="agent"
         />
       </Modal>
 

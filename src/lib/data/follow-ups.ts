@@ -1,4 +1,4 @@
-import { createClient } from "@/lib/supabase/server";
+import { createDataClient } from "@/lib/supabase/data-client";
 import type { FollowUp } from "@/lib/types";
 
 function mapRow(row: Record<string, unknown>): FollowUp {
@@ -27,7 +27,7 @@ function mapRow(row: Record<string, unknown>): FollowUp {
 }
 
 export async function getFollowUps(agentId?: string, options?: { todayOnly?: boolean }): Promise<FollowUp[]> {
-  const supabase = await createClient();
+  const supabase = await createDataClient();
 
   let query = supabase
     .from("follow_ups")
@@ -61,7 +61,7 @@ export async function getFollowUps(agentId?: string, options?: { todayOnly?: boo
 }
 
 export async function getFollowUpsByContact(contactId: string): Promise<FollowUp[]> {
-  const supabase = await createClient();
+  const supabase = await createDataClient();
 
   const { data, error } = await supabase
     .from("follow_ups")
@@ -92,7 +92,7 @@ export async function createFollowUp(data: {
   agent_id?: string;
   stock_id?: string;
 }): Promise<{ error?: string }> {
-  const supabase = await createClient();
+  const supabase = await createDataClient();
 
   const { error } = await supabase.from("follow_ups").insert({
     contact_id: data.contact_id,
@@ -109,7 +109,7 @@ export async function createFollowUp(data: {
 }
 
 export async function completeFollowUp(id: string): Promise<{ error?: string }> {
-  const supabase = await createClient();
+  const supabase = await createDataClient();
 
   const { error } = await supabase
     .from("follow_ups")

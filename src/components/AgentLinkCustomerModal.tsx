@@ -84,21 +84,39 @@ export function AgentLinkCustomerModal({
     startTransition(async () => {
       try {
         const contactIds = Array.from(selectedContactIds);
-        const res = await fetch("/api/agent/link-customers", {
+        const payload = JSON.stringify({
+          stock_id: lotId,
+          project_id: projectId,
+          contact_ids: contactIds,
+        });
+
+        // Atomic timed reservation hold. Falls back to the legacy link + EOI
+        // flow only when the deal spine isn't enabled in this environment.
+        const res = await fetch("/api/agent/reserve-lot", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            stock_id: lotId,
-            project_id: projectId,
-            contact_ids: contactIds,
-          }),
+          body: payload,
         });
-        const data = await res.json();
-        if (!res.ok) {
-          setError(data.error || "Failed to link customers");
-        } else {
+        const data = await res.json().catch(() => ({}));
+
+        if (res.ok) {
           router.refresh();
           handleClose();
+        } else if (res.status === 503 && data.notEnabled) {
+          const legacy = await fetch("/api/agent/link-customers", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: payload,
+          });
+          const legacyData = await legacy.json().catch(() => ({}));
+          if (!legacy.ok) {
+            setError(legacyData.error || "Failed to link customers");
+          } else {
+            router.refresh();
+            handleClose();
+          }
+        } else {
+          setError(data.error || "Failed to link customers");
         }
       } catch {
         setError("Failed to link customers");
@@ -209,6 +227,7 @@ export function AgentLinkCustomerModal({
             defaultAgentId={agentId}
             onSuccess={handleNewContactSuccess}
             onCancel={handleClose}
+            scope="agent"
           />
         </div>
       )}

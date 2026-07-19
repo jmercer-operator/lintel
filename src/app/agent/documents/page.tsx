@@ -1,11 +1,15 @@
-import { PREVIEW_AGENT_ID, PREVIEW_ORG_ID } from "@/lib/auth/roles";
+import { redirect } from "next/navigation";
+import { getEffectiveAgentId, getEffectiveOrgId } from "@/lib/auth/identity";
 import { getAgentProjects } from "@/lib/data/agent-portal";
 import { getDocumentCategories } from "@/lib/data/documents";
 import { AgentDocumentsClient } from "./AgentDocumentsClient";
 
 export default async function AgentDocumentsPage() {
-  const projects = await getAgentProjects(PREVIEW_AGENT_ID);
-  const categories = await getDocumentCategories(PREVIEW_ORG_ID);
+  const agentId = await getEffectiveAgentId();
+  const orgId = await getEffectiveOrgId();
+  if (!agentId || !orgId) redirect("/login");
+  const projects = await getAgentProjects(agentId);
+  const categories = await getDocumentCategories(orgId);
 
   return <AgentDocumentsClient projects={projects} categories={categories} />;
 }

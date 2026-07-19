@@ -1,7 +1,8 @@
 "use server";
 
-import { createClient } from "@/lib/supabase/server";
+import { createDataClient } from "@/lib/supabase/data-client";
 import { createAdminClient } from "@/lib/supabase/admin";
+import { requireStaff } from "@/lib/auth/identity";
 import { revalidatePath } from "next/cache";
 
 export interface AgentRegistration {
@@ -24,7 +25,7 @@ const DEFAULT_ORG_ID = "a0000000-0000-0000-0000-000000000001";
 export async function getRegistrations(
   status?: "pending" | "approved" | "rejected"
 ): Promise<AgentRegistration[]> {
-  const supabase = await createClient();
+  const supabase = await createDataClient();
 
   let query = supabase
     .from("agent_registrations")
@@ -41,7 +42,7 @@ export async function getRegistrations(
 }
 
 export async function getPendingRegistrationCount(): Promise<number> {
-  const supabase = await createClient();
+  const supabase = await createDataClient();
 
   const { count, error } = await supabase
     .from("agent_registrations")
@@ -60,7 +61,7 @@ export async function submitRegistration(formData: {
   agency?: string;
   message?: string;
 }): Promise<{ success: boolean; error?: string }> {
-  const supabase = await createClient();
+  const supabase = await createDataClient();
 
   const { error } = await supabase.from("agent_registrations").insert({
     first_name: formData.first_name,
@@ -84,9 +85,17 @@ export async function submitRegistration(formData: {
 }
 
 export async function approveRegistration(
-  registrationId: string,
-  reviewedBy?: string
+  registrationId: string
 ): Promise<{ success: boolean; error?: string }> {
+  // Fail closed independent of middleware: these actions use the service
+  // role, so they must verify staff themselves.
+  const staff = await requireStaff();
+  if (!staff) {
+    return { success: false, error: "Unauthorized: staff access required" };
+  }
+  // Synthetic preview identity has no real profile row to reference.
+  const reviewedBy = staff.profileId === "preview" ? undefined : staff.profileId;
+
   const admin = createAdminClient();
 
   // 1. Get the registration
@@ -104,12 +113,20 @@ export async function approveRegistration(
     return { success: false, error: "Registration has already been processed" };
   }
 
-  // 2. Create Supabase Auth user
-  const { data: authUser, error: authError } = await admin.auth.admin.createUser({
-    email: reg.email,
-    password: "Lintel2026!",
-    email_confirm: true,
-  });
+  // 2. Invite the approved agent into Supabase Auth.
+  // Do not create users with a shared default password; the invite flow lets
+  // Supabase send a one-time setup link and keeps credentials out of source.
+  const { data: authUser, error: authError } =
+    await admin.auth.admin.inviteUserByEmail(reg.email, {
+      data: {
+        role: "agent",
+        first_name: reg.first_name,
+        last_name: reg.last_name,
+      },
+      redirectTo: process.env.NEXT_PUBLIC_SITE_URL
+        ? `${process.env.NEXT_PUBLIC_SITE_URL}/login`
+        : undefined,
+    });
 
   if (authError) {
     // If user already exists, try to find them
@@ -188,9 +205,14 @@ async function completeApproval(
 }
 
 export async function rejectRegistration(
-  registrationId: string,
-  reviewedBy?: string
+  registrationId: string
 ): Promise<{ success: boolean; error?: string }> {
+  const staff = await requireStaff();
+  if (!staff) {
+    return { success: false, error: "Unauthorized: staff access required" };
+  }
+  const reviewedBy = staff.profileId === "preview" ? undefined : staff.profileId;
+
   const admin = createAdminClient();
 
   const { error } = await admin

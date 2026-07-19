@@ -31,6 +31,7 @@ export interface ProjectDocument {
   mime_type: string;
   visibility: "staff" | "agent" | "client";
   uploaded_by: string | null;
+  uploader_name?: string | null;
   created_at: string;
   updated_at: string;
 }
@@ -44,6 +45,7 @@ export interface ClientDocForProject {
   file_path: string;
   file_size: number;
   mime_type: string;
+  uploader_name?: string | null;
   created_at: string;
 }
 
@@ -286,6 +288,7 @@ export function DocumentsTab({ projectId, categories, documents, clientDocuments
                       <p className="text-sm font-medium text-heading truncate">{doc.file_name}</p>
                       <p className="text-xs text-secondary">
                         {formatFileSize(doc.file_size)} · {new Date(doc.created_at).toLocaleDateString("en-AU", { day: "numeric", month: "short", year: "numeric" })}
+                        {doc.uploader_name ? ` · Uploaded by ${doc.uploader_name}` : ""}
                       </p>
                     </div>
                     <span className={`
@@ -357,6 +360,7 @@ export function DocumentsTab({ projectId, categories, documents, clientDocuments
                   <p className="text-sm font-medium text-heading truncate">{doc.file_name}</p>
                   <p className="text-xs text-secondary">
                     {doc.contact_name} · {doc.document_type} · {formatFileSize(doc.file_size)} · {new Date(doc.created_at).toLocaleDateString("en-AU", { day: "numeric", month: "short" })}
+                    {doc.uploader_name ? ` · Uploaded by ${doc.uploader_name}` : ""}
                   </p>
                 </div>
                 <button

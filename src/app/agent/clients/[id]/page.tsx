@@ -1,5 +1,5 @@
-import { notFound } from "next/navigation";
-import { PREVIEW_AGENT_ID } from "@/lib/auth/roles";
+import { notFound, redirect } from "next/navigation";
+import { getEffectiveAgentId } from "@/lib/auth/identity";
 import { getContact } from "@/lib/data/contacts";
 import { getAgents } from "@/lib/data/agents";
 import { getClientDocuments } from "@/lib/data/documents";
@@ -12,6 +12,8 @@ interface PageProps {
 }
 
 export default async function AgentClientDetailPage({ params }: PageProps) {
+  const agentId = await getEffectiveAgentId();
+  if (!agentId) redirect("/login");
   const { id } = await params;
   const [contact, agents, clientDocs, templates] = await Promise.all([
     getContact(id),
@@ -23,7 +25,7 @@ export default async function AgentClientDetailPage({ params }: PageProps) {
   if (!contact) notFound();
 
   // Verify this contact belongs to this agent
-  if (contact.referring_agent_id !== PREVIEW_AGENT_ID) {
+  if (contact.referring_agent_id !== agentId) {
     notFound();
   }
 
@@ -35,7 +37,7 @@ export default async function AgentClientDetailPage({ params }: PageProps) {
   ]);
 
   // Get current agent name
-  const currentAgent = agents.find((a) => a.id === PREVIEW_AGENT_ID);
+  const currentAgent = agents.find((a) => a.id === agentId);
   const agentName = currentAgent ? `${currentAgent.first_name} ${currentAgent.last_name}` : undefined;
 
   return (
@@ -43,7 +45,7 @@ export default async function AgentClientDetailPage({ params }: PageProps) {
       contact={contact}
       agents={agents}
       clientDocuments={clientDocs}
-      agentId={PREVIEW_AGENT_ID}
+      agentId={agentId}
       emailTemplates={templates}
       projectDocuments={projectDocs}
       documentShares={docShares}

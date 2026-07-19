@@ -1,40 +1,70 @@
 import { NextResponse } from "next/server";
-import { createAdminClient } from "@/lib/supabase/admin";
+import { createDataClient } from "@/lib/supabase/data-client";
+import { getAgentApiContext } from "@/lib/auth/identity";
 
 const AGENT_ALLOWED_STATUSES = ["Available", "EOI", "Under Contract", "Exchanged"];
+const ALL_STATUSES = [...AGENT_ALLOWED_STATUSES, "Settled"];
 
 export async function POST(request: Request) {
   try {
-    const { id, status, forceOverride, agentId } = await request.json();
+    const { id, status, agentId: requestedAgentId } = await request.json();
 
     if (!id || !status) {
       return NextResponse.json({ error: "ID and status are required" }, { status: 400 });
     }
 
-    if (!AGENT_ALLOWED_STATUSES.includes(status)) {
-      return NextResponse.json({ error: "Agents cannot set status to Settled" }, { status: 403 });
+    if (!ALL_STATUSES.includes(status)) {
+      return NextResponse.json({ error: "Invalid status" }, { status: 400 });
     }
 
-    const supabase = createAdminClient();
+    // Derive the acting agent from the session; body agentId is only
+    // honoured for staff / allowed local preview.
+    const ctx = await getAgentApiContext(requestedAgentId);
+    if (!ctx) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+    if (!ctx.isPrivileged && !AGENT_ALLOWED_STATUSES.includes(status)) {
+      return NextResponse.json({ error: "Agents cannot set status to Settled" }, { status: 403 });
+    }
+    const agentId = ctx.agentId;
 
-    // Get current lot status
-    const { data: currentLot } = await supabase
-      .from("stock")
-      .select("status")
-      .eq("id", id)
-      .single();
+    // Session-scoped client — RLS applies; the caller's session (or allowed
+    // local preview policies) must permit these operations.
+    const supabase = await createDataClient();
 
-    const { error } = await supabase
-      .from("stock")
-      .update({ status, updated_at: new Date().toISOString() })
-      .eq("id", id);
+    // Agents may only change status on lots assigned to them.
+    if (!ctx.isPrivileged) {
+      const { data: lot } = await supabase
+        .from("stock")
+        .select("agent_id")
+        .eq("id", id)
+        .maybeSingle();
+
+      if (!lot || lot.agent_id !== ctx.agentId) {
+        return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+      }
+    }
+
+    const updateResult = ctx.isPrivileged
+      ? await supabase
+          .from("stock")
+          .update({ status, updated_at: new Date().toISOString() })
+          .eq("id", id)
+      : await supabase.rpc("lintel_agent_update_lot_status", {
+          target_stock_id: id,
+          target_status: status,
+        });
+
+    const error = updateResult.error;
 
     if (error) {
       return NextResponse.json({ error: error.message }, { status: 500 });
     }
 
-    // If status changed to Available, unlink all customers from this lot
-    if (status === "Available") {
+    // If staff changed status to Available, unlink all customers from this lot.
+    // Agent changes do this inside lintel_agent_update_lot_status so agents do
+    // not need broad table-level stock/contact_stock update privileges.
+    if (ctx.isPrivileged && status === "Available") {
       await supabase
         .from("contact_stock")
         .delete()
@@ -74,7 +104,7 @@ export async function POST(request: Request) {
         const lotNumber = lotDetails?.lot_number || "?";
 
         const notifications = admins.map((admin: { id: string; email: string }) => ({
-          org_id: "a0000000-0000-0000-0000-000000000001",
+          org_id: ctx.orgId,
           recipient_id: admin.id,
           recipient_type: "staff",
           type: "lot_status_change",

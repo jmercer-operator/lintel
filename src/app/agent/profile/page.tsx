@@ -1,11 +1,14 @@
-import { PREVIEW_AGENT_ID } from "@/lib/auth/roles";
+import { redirect } from "next/navigation";
+import { getEffectiveAgentId } from "@/lib/auth/identity";
 import { getAgent } from "@/lib/data/agents";
 import { getAgentProjects } from "@/lib/data/agent-portal";
 import { AgentProfileClient } from "./AgentProfileClient";
 
 export default async function AgentProfilePage() {
-  const agent = await getAgent(PREVIEW_AGENT_ID);
-  const projects = await getAgentProjects(PREVIEW_AGENT_ID);
+  const agentId = await getEffectiveAgentId();
+  if (!agentId) redirect("/login");
+  const agent = await getAgent(agentId);
+  const projects = await getAgentProjects(agentId);
 
   if (!agent) {
     return (

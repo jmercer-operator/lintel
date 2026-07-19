@@ -29,6 +29,27 @@ interface ClientDocument {
   file_size: number;
   created_at: string;
 }
+
+/** Buyer-safe deal summary — dates and statuses only, never amounts. */
+interface BuyerDeal {
+  id: string;
+  stock_id: string;
+  stage: "reservation" | "contract_issued" | "exchanged" | "settled" | "cancelled";
+  hold_expires_at: string;
+  contract_issued_date: string | null;
+  exchanged_date: string | null;
+  cooling_off_ends_date: string | null;
+  sunset_date: string | null;
+  deposit_status: "pending" | "paid" | "refunded";
+  deposit_due_date: string | null;
+  deposit_paid_date: string | null;
+  finance_status: "not_required" | "pending" | "approved" | "declined";
+  finance_due_date: string | null;
+  firb_status: "not_required" | "pending" | "approved" | "declined";
+  firb_due_date: string | null;
+  settlement_target_date: string | null;
+  settlement_actual_date: string | null;
+}
 import {
   welcomeMessages,
   getRandomMessage,
@@ -48,6 +69,7 @@ interface PortalClientProps {
   agent: Agent | null;
   milestones: ProjectMilestone[];
   clientDocuments: ClientDocument[];
+  deal: BuyerDeal | null;
 }
 
 export default function PortalClient({
@@ -57,6 +79,7 @@ export default function PortalClient({
   agent,
   milestones,
   clientDocuments,
+  deal,
 }: PortalClientProps) {
   const [welcomeMsg, setWelcomeMsg] = useState("");
   const [milestoneMsg, setMilestoneMsg] = useState("");
@@ -375,6 +398,142 @@ export default function PortalClient({
                 <p className="text-lg sm:text-xl font-bold text-heading">{totalArea ? `${totalArea}` : "—"}</p>
                 <p className="text-[11px] text-muted font-medium">m² Total</p>
               </div>
+            </div>
+          </div>
+        )}
+
+        {/* Your Purchase Journey — buyer's own deal only (dates + statuses, no amounts) */}
+        {deal && deal.stage !== "cancelled" && (
+          <div
+            className={`portal-card transition-all duration-700 delay-200 ${
+              cardsVisible
+                ? "opacity-100 translate-y-0"
+                : "opacity-0 translate-y-4"
+            }`}
+          >
+            <h3 className="text-lg sm:text-xl font-bold text-heading mb-6">
+              Your Purchase Journey
+            </h3>
+
+            {/* Stage steps */}
+            <div className="flex items-center gap-2 mb-6">
+              {(
+                [
+                  { key: "reservation", label: "Reserved" },
+                  { key: "contract_issued", label: "Contract" },
+                  { key: "exchanged", label: "Exchanged" },
+                  { key: "settled", label: "Settled" },
+                ] as const
+              ).map((step, i, steps) => {
+                const order = ["reservation", "contract_issued", "exchanged", "settled"];
+                const currentIdx = order.indexOf(deal.stage);
+                const done = currentIdx >= i;
+                const isCurrent = currentIdx === i;
+                return (
+                  <div key={step.key} className="flex-1">
+                    <div
+                      className={`h-2 rounded-full mb-2 ${
+                        done ? "bg-emerald-primary" : "bg-border"
+                      } ${isCurrent && i < steps.length - 1 ? "animate-pulse" : ""}`}
+                    />
+                    <p
+                      className={`text-[11px] sm:text-xs font-semibold text-center ${
+                        done ? "text-emerald-primary" : "text-muted"
+                      }`}
+                    >
+                      {step.label}
+                    </p>
+                  </div>
+                );
+              })}
+            </div>
+
+            {/* Key dates & statuses */}
+            <div className="space-y-2.5">
+              {deal.stage === "reservation" && (
+                <div className="flex justify-between items-center py-2 border-b border-border/60">
+                  <span className="text-sm text-secondary">Reservation held until</span>
+                  <span className="text-sm font-semibold text-heading">
+                    {new Date(deal.hold_expires_at).toLocaleDateString("en-AU", {
+                      day: "numeric", month: "short", year: "numeric",
+                    })}
+                  </span>
+                </div>
+              )}
+              {deal.contract_issued_date && (
+                <div className="flex justify-between items-center py-2 border-b border-border/60">
+                  <span className="text-sm text-secondary">Contract issued</span>
+                  <span className="text-sm font-semibold text-heading">
+                    {new Date(deal.contract_issued_date).toLocaleDateString("en-AU", { day: "numeric", month: "short", year: "numeric" })}
+                  </span>
+                </div>
+              )}
+              {deal.exchanged_date && (
+                <div className="flex justify-between items-center py-2 border-b border-border/60">
+                  <span className="text-sm text-secondary">Contracts exchanged</span>
+                  <span className="text-sm font-semibold text-heading">
+                    {new Date(deal.exchanged_date).toLocaleDateString("en-AU", { day: "numeric", month: "short", year: "numeric" })}
+                  </span>
+                </div>
+              )}
+              {deal.cooling_off_ends_date && deal.stage !== "settled" && (
+                <div className="flex justify-between items-center py-2 border-b border-border/60">
+                  <span className="text-sm text-secondary">Cooling-off ends</span>
+                  <span className="text-sm font-semibold text-heading">
+                    {new Date(deal.cooling_off_ends_date).toLocaleDateString("en-AU", { day: "numeric", month: "short", year: "numeric" })}
+                  </span>
+                </div>
+              )}
+              <div className="flex justify-between items-center py-2 border-b border-border/60">
+                <span className="text-sm text-secondary">Deposit</span>
+                <span className={`text-sm font-semibold ${deal.deposit_status === "paid" ? "text-emerald-primary" : "text-heading"}`}>
+                  {deal.deposit_status === "paid"
+                    ? "Paid ✓"
+                    : deal.deposit_status === "refunded"
+                    ? "Refunded"
+                    : deal.deposit_due_date
+                    ? `Due ${new Date(deal.deposit_due_date).toLocaleDateString("en-AU", { day: "numeric", month: "short" })}`
+                    : "Pending"}
+                </span>
+              </div>
+              {deal.finance_status !== "not_required" && (
+                <div className="flex justify-between items-center py-2 border-b border-border/60">
+                  <span className="text-sm text-secondary">Finance approval</span>
+                  <span className={`text-sm font-semibold ${deal.finance_status === "approved" ? "text-emerald-primary" : "text-heading"}`}>
+                    {deal.finance_status === "approved"
+                      ? "Approved ✓"
+                      : deal.finance_status === "declined"
+                      ? "Declined"
+                      : deal.finance_due_date
+                      ? `Due ${new Date(deal.finance_due_date).toLocaleDateString("en-AU", { day: "numeric", month: "short" })}`
+                      : "Pending"}
+                  </span>
+                </div>
+              )}
+              {deal.firb_status !== "not_required" && (
+                <div className="flex justify-between items-center py-2 border-b border-border/60">
+                  <span className="text-sm text-secondary">FIRB approval</span>
+                  <span className={`text-sm font-semibold ${deal.firb_status === "approved" ? "text-emerald-primary" : "text-heading"}`}>
+                    {deal.firb_status === "approved"
+                      ? "Approved ✓"
+                      : deal.firb_status === "declined"
+                      ? "Declined"
+                      : deal.firb_due_date
+                      ? `Due ${new Date(deal.firb_due_date).toLocaleDateString("en-AU", { day: "numeric", month: "short" })}`
+                      : "Pending"}
+                  </span>
+                </div>
+              )}
+              {(deal.settlement_actual_date || deal.settlement_target_date) && (
+                <div className="flex justify-between items-center py-2">
+                  <span className="text-sm text-secondary">
+                    {deal.settlement_actual_date ? "Settled on" : "Settlement expected"}
+                  </span>
+                  <span className="text-sm font-semibold text-heading">
+                    {new Date(deal.settlement_actual_date || deal.settlement_target_date!).toLocaleDateString("en-AU", { day: "numeric", month: "short", year: "numeric" })}
+                  </span>
+                </div>
+              )}
             </div>
           </div>
         )}

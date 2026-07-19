@@ -29,12 +29,14 @@ interface AgentContact {
 interface Props {
   stock: LotWithCommission[];
   stockCustomerMap: Record<string, boolean>;
+  /** stock_id → hold_expires_at for active reservation holds. */
+  holdExpiryMap: Record<string, string>;
   agentContacts: AgentContact[];
   agents: Agent[];
   agentId: string;
 }
 
-export function AgentLotsClient({ stock, stockCustomerMap, agentContacts, agents, agentId }: Props) {
+export function AgentLotsClient({ stock, stockCustomerMap, holdExpiryMap, agentContacts, agents, agentId }: Props) {
   const [filter, setFilter] = useState<string>("All");
   const [pendingChanges, setPendingChanges] = useState<Record<string, string>>({});
   const [savingId, setSavingId] = useState<string | null>(null);
@@ -69,8 +71,10 @@ export function AgentLotsClient({ stock, stockCustomerMap, agentContacts, agents
   function handleStatusSelect(lotId: string, newStatus: string, currentStatus: string) {
     const lot = stock.find((l) => l.id === lotId);
 
-    // If changing to any different status (except back to Available), show link customer modal
-    if (lot && newStatus !== currentStatus && newStatus !== "Available") {
+    // A lot can only leave Available once a customer is linked. If no buyer is
+    // linked yet, open the link-customer modal; already-linked lots change
+    // status directly via Save.
+    if (lot && newStatus !== currentStatus && newStatus !== "Available" && !stockCustomerMap[lotId]) {
       setPendingChanges((prev) => ({ ...prev, [lotId]: newStatus }));
       // Set lot first, then open modal in next tick to avoid React batching issues
       setLinkModalLot(lot);
@@ -203,6 +207,7 @@ export function AgentLotsClient({ stock, stockCustomerMap, agentContacts, agents
                       <th className="text-right py-3 px-3 text-[11px] font-semibold text-muted uppercase tracking-wider">m² Ext</th>
                       <th className="text-right py-3 px-3 text-[11px] font-semibold text-muted uppercase tracking-wider">Price</th>
                       <th className="text-left py-3 px-3 text-[11px] font-semibold text-muted uppercase tracking-wider">Status</th>
+                      <th className="text-center py-3 px-3 text-[11px] font-semibold text-muted uppercase tracking-wider">Buyer</th>
                       <th className="text-right py-3 px-3 text-[11px] font-semibold text-muted uppercase tracking-wider">Commission</th>
                       <th className="text-center py-3 px-3 text-[11px] font-semibold text-muted uppercase tracking-wider"></th>
                     </tr>
@@ -234,6 +239,25 @@ export function AgentLotsClient({ stock, stockCustomerMap, agentContacts, agents
                                 <option value="Settled">Settled</option>
                               )}
                             </select>
+                          </td>
+                          <td className="py-3 px-3 text-center">
+                            {stockCustomerMap[lot.id] ? (
+                              <div>
+                                <span className="inline-flex items-center gap-1 text-[10px] font-semibold uppercase tracking-wider px-2 py-0.5 rounded-full bg-emerald-primary/10 text-emerald-primary">
+                                  <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
+                                    <polyline points="20 6 9 17 4 12" />
+                                  </svg>
+                                  Linked
+                                </span>
+                                {holdExpiryMap[lot.id] && (
+                                  <p className={`text-[10px] mt-0.5 ${new Date(holdExpiryMap[lot.id]) < new Date() ? "text-error font-semibold" : "text-secondary"}`}>
+                                    {new Date(holdExpiryMap[lot.id]) < new Date() ? "hold expired" : `hold to ${new Date(holdExpiryMap[lot.id]).toLocaleDateString("en-AU", { day: "numeric", month: "short" })}`}
+                                  </p>
+                                )}
+                              </div>
+                            ) : (
+                              <span className="text-muted text-xs">—</span>
+                            )}
                           </td>
                           <td className="py-3 px-3 text-right text-secondary text-xs font-mono opacity-70">
                             {formatCommission(lot.commission_rate, lot.commission_type)}

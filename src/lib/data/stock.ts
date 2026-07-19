@@ -1,4 +1,4 @@
-import { createClient } from "@/lib/supabase/server";
+import { createDataClient } from "@/lib/supabase/data-client";
 import type { StockItem } from "@/lib/types";
 
 export interface StockWithProject extends StockItem {
@@ -12,7 +12,7 @@ export async function getAllStock(filters?: {
   agentId?: string;
   search?: string;
 }): Promise<StockWithProject[]> {
-  const supabase = await createClient();
+  const supabase = await createDataClient();
 
   let query = supabase
     .from("stock")
@@ -46,7 +46,7 @@ export async function getAllStock(filters?: {
 }
 
 export async function getStock(projectId: string, status?: string): Promise<StockItem[]> {
-  const supabase = await createClient();
+  const supabase = await createDataClient();
 
   let query = supabase
     .from("stock")
@@ -64,7 +64,7 @@ export async function getStock(projectId: string, status?: string): Promise<Stoc
 }
 
 export async function getStockForDashboard(projectId?: string, status?: string): Promise<StockWithProject[]> {
-  const supabase = await createClient();
+  const supabase = await createDataClient();
 
   let query = supabase
     .from("stock")
@@ -92,7 +92,7 @@ export async function getStockForDashboard(projectId?: string, status?: string):
 }
 
 export async function getStockItem(id: string): Promise<StockItem | null> {
-  const supabase = await createClient();
+  const supabase = await createDataClient();
 
   const { data, error } = await supabase
     .from("stock")
@@ -120,7 +120,7 @@ export async function createStock(data: {
   agent_name?: string | null;
   notes?: string | null;
 }): Promise<StockItem> {
-  const supabase = await createClient();
+  const supabase = await createDataClient();
 
   const { data: stock, error } = await supabase
     .from("stock")
@@ -149,7 +149,7 @@ export async function updateStock(
     notes: string | null;
   }>
 ): Promise<StockItem> {
-  const supabase = await createClient();
+  const supabase = await createDataClient();
 
   const { data: stock, error } = await supabase
     .from("stock")

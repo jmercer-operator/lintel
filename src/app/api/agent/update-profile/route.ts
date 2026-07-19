@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
-import { createClient } from "@/lib/supabase/server";
+import { createDataClient } from "@/lib/supabase/data-client";
+import { getAgentApiContext } from "@/lib/auth/identity";
 
 export async function POST(request: Request) {
   try {
@@ -9,7 +10,16 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "Agent ID is required" }, { status: 400 });
     }
 
-    const supabase = await createClient();
+    const ctx = await getAgentApiContext(id);
+    if (!ctx) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+    // Agents may only update their own profile.
+    if (!ctx.isPrivileged && ctx.agentId !== id) {
+      return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+    }
+
+    const supabase = await createDataClient();
     const { error } = await supabase
       .from("agents")
       .update({

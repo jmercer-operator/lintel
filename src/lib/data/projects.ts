@@ -1,8 +1,8 @@
-import { createClient } from "@/lib/supabase/server";
+import { createDataClient } from "@/lib/supabase/data-client";
 import type { Project, ProjectWithStats, StockStats } from "@/lib/types";
 
 export async function getProjects(): Promise<ProjectWithStats[]> {
-  const supabase = await createClient();
+  const supabase = await createDataClient();
 
   const { data: projects, error } = await supabase
     .from("projects")
@@ -43,7 +43,7 @@ export async function getProjects(): Promise<ProjectWithStats[]> {
 }
 
 export async function getProject(id: string): Promise<ProjectWithStats | null> {
-  const supabase = await createClient();
+  const supabase = await createDataClient();
 
   const { data: project, error } = await supabase
     .from("projects")
@@ -81,7 +81,7 @@ export async function createProject(data: {
   postcode?: string;
   org_id: string;
 }): Promise<Project> {
-  const supabase = await createClient();
+  const supabase = await createDataClient();
 
   const { data: project, error } = await supabase
     .from("projects")
@@ -122,7 +122,7 @@ export async function createProject(data: {
 }
 
 export async function getAggregateStats(projectId?: string): Promise<StockStats> {
-  const supabase = await createClient();
+  const supabase = await createDataClient();
 
   let query = supabase.from("stock").select("status");
   if (projectId) {

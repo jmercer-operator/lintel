@@ -1,4 +1,5 @@
-import { createClient } from "@/lib/supabase/server";
+import { createDataClient } from "@/lib/supabase/data-client";
+import { requireStaff } from "@/lib/auth/identity";
 import { NextResponse } from "next/server";
 
 export async function DELETE(
@@ -6,7 +7,10 @@ export async function DELETE(
   { params }: { params: Promise<{ id: string }> }
 ) {
   const { id } = await params;
-  const supabase = await createClient();
+  if (!(await requireStaff())) {
+    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+  }
+  const supabase = await createDataClient();
 
   // Unassign stock from this agent
   await supabase

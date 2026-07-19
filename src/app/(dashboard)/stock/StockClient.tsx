@@ -6,6 +6,8 @@ import { ProjectLogo } from "@/components/ProjectLogo";
 import { StatusBadge } from "@/components/StatusBadge";
 import { Modal } from "@/components/Modal";
 import { StockForm } from "@/components/StockForm";
+import { DealPanel } from "@/components/DealPanel";
+import { DEAL_STAGE_LABELS, type StaffDealInfo } from "@/lib/deal-types";
 import {
   formatPrice,
   formatArea,
@@ -32,12 +34,24 @@ interface Props {
     agentId: string;
     search: string;
   };
+  dealsAvailable: boolean;
+  dealsByStockId: Record<string, StaffDealInfo>;
+  contactOptions: { id: string; name: string }[];
 }
 
-export function StockClient({ stock, projects, agents, filters }: Props) {
+export function StockClient({
+  stock,
+  projects,
+  agents,
+  filters,
+  dealsAvailable,
+  dealsByStockId,
+  contactOptions,
+}: Props) {
   const router = useRouter();
   const searchParams = useSearchParams();
   const [editingStock, setEditingStock] = useState<StockItem | null>(null);
+  const [modalTab, setModalTab] = useState<"details" | "deal">("details");
 
   function updateFilter(key: string, value: string) {
     const params = new URLSearchParams(searchParams.toString());
@@ -137,6 +151,9 @@ export function StockClient({ stock, projects, agents, filters }: Props) {
                   <th className="text-left px-4 py-3 font-semibold text-secondary text-xs uppercase tracking-wider">Status</th>
                   <th className="text-left px-4 py-3 font-semibold text-secondary text-xs uppercase tracking-wider">Agent</th>
                   <th className="text-left px-4 py-3 font-semibold text-secondary text-xs uppercase tracking-wider">Commission</th>
+                  {dealsAvailable && (
+                    <th className="text-left px-4 py-3 font-semibold text-secondary text-xs uppercase tracking-wider">Deal</th>
+                  )}
                   <th className="text-right px-4 py-3 font-semibold text-secondary text-xs uppercase tracking-wider">Updated</th>
                 </tr>
               </thead>
@@ -144,7 +161,7 @@ export function StockClient({ stock, projects, agents, filters }: Props) {
                 {stock.map((s) => (
                   <tr
                     key={s.id}
-                    onClick={() => setEditingStock(s)}
+                    onClick={() => { setEditingStock(s); setModalTab("details"); }}
                     className="border-b border-border last:border-0 hover:bg-bg-alt/50 cursor-pointer transition-colors"
                   >
                     <td className="px-4 py-3">
@@ -169,6 +186,29 @@ export function StockClient({ stock, projects, agents, filters }: Props) {
                           : `${s.commission_rate}%`
                         : "—"}
                     </td>
+                    {dealsAvailable && (
+                      <td className="px-4 py-3 text-xs">
+                        {(() => {
+                          const info = dealsByStockId[s.id];
+                          if (!info) return <span className="text-secondary">—</span>;
+                          const expired =
+                            info.deal.stage === "reservation" &&
+                            new Date(info.deal.hold_expires_at) < new Date();
+                          return (
+                            <div>
+                              <span className="font-semibold text-heading">
+                                {DEAL_STAGE_LABELS[info.deal.stage]}
+                              </span>
+                              {info.deal.stage === "reservation" && (
+                                <p className={expired ? "text-error" : "text-secondary"}>
+                                  {expired ? "hold expired" : `expires ${new Date(info.deal.hold_expires_at).toLocaleDateString("en-AU", { day: "numeric", month: "short" })}`}
+                                </p>
+                              )}
+                            </div>
+                          );
+                        })()}
+                      </td>
+                    )}
                     <td className="px-4 py-3 text-right text-xs text-secondary">{timeAgo(s.updated_at)}</td>
                   </tr>
                 ))}
@@ -183,18 +223,46 @@ export function StockClient({ stock, projects, agents, filters }: Props) {
         <Modal
           open={!!editingStock}
           onClose={() => setEditingStock(null)}
-          title={`Edit Lot ${editingStock.lot_number}`}
+          title={`Lot ${editingStock.lot_number}`}
         >
-          <StockForm
-            stock={editingStock}
-            projectId={editingStock.project_id}
-            agents={agents}
-            onSuccess={() => {
-              setEditingStock(null);
-              router.refresh();
-            }}
-            onCancel={() => setEditingStock(null)}
-          />
+          <div className="flex gap-1 mb-4 border-b border-border">
+            {(["details", "deal"] as const).map((tab) => (
+              <button
+                key={tab}
+                onClick={() => setModalTab(tab)}
+                className={`px-4 py-2 text-sm font-semibold border-b-2 -mb-px transition-colors cursor-pointer ${
+                  modalTab === tab
+                    ? "border-emerald-primary text-emerald-primary"
+                    : "border-transparent text-secondary hover:text-heading"
+                }`}
+              >
+                {tab === "details" ? "Details" : "Deal"}
+              </button>
+            ))}
+          </div>
+
+          {modalTab === "details" ? (
+            <StockForm
+              stock={editingStock}
+              projectId={editingStock.project_id}
+              agents={agents}
+              onSuccess={() => {
+                setEditingStock(null);
+                router.refresh();
+              }}
+              onCancel={() => setEditingStock(null)}
+            />
+          ) : (
+            <DealPanel
+              stockId={editingStock.id}
+              projectId={editingStock.project_id}
+              lotNumber={editingStock.lot_number}
+              stockStatus={editingStock.status}
+              dealsAvailable={dealsAvailable}
+              dealInfo={dealsByStockId[editingStock.id] || null}
+              contacts={contactOptions}
+            />
+          )}
         </Modal>
       )}
     </div>

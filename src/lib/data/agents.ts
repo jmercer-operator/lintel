@@ -1,8 +1,8 @@
-import { createClient } from "@/lib/supabase/server";
+import { createDataClient } from "@/lib/supabase/data-client";
 import type { Agent, AgentWithStats, AgentProject } from "@/lib/types";
 
 export async function getAgents(): Promise<Agent[]> {
-  const supabase = await createClient();
+  const supabase = await createDataClient();
   const { data, error } = await supabase
     .from("agents")
     .select("*")
@@ -13,7 +13,7 @@ export async function getAgents(): Promise<Agent[]> {
 }
 
 export async function getAgent(id: string): Promise<Agent | null> {
-  const supabase = await createClient();
+  const supabase = await createDataClient();
   const { data, error } = await supabase
     .from("agents")
     .select("*")
@@ -25,7 +25,7 @@ export async function getAgent(id: string): Promise<Agent | null> {
 }
 
 export async function getAgentWithStats(id: string): Promise<AgentWithStats | null> {
-  const supabase = await createClient();
+  const supabase = await createDataClient();
 
   const { data: agent, error } = await supabase
     .from("agents")
@@ -66,7 +66,7 @@ export async function getAgentWithStats(id: string): Promise<AgentWithStats | nu
 export async function getAgentsWithProjectCounts(): Promise<
   (Agent & { project_count: number; lot_count: number; available_count: number })[]
 > {
-  const supabase = await createClient();
+  const supabase = await createDataClient();
 
   const { data: agents, error } = await supabase
     .from("agents")
@@ -121,7 +121,7 @@ export async function getAgentsWithProjectCounts(): Promise<
 }
 
 export async function getAgentProjectsWithCommission(agentId: string): Promise<AgentProject[]> {
-  const supabase = await createClient();
+  const supabase = await createDataClient();
   const { data, error } = await supabase
     .from("agent_projects")
     .select("*")

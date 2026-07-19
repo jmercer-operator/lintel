@@ -1,17 +1,37 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { createAdminClient } from "@/lib/supabase/admin";
+import type { SupabaseClient } from "@supabase/supabase-js";
+import { createDataClient } from "@/lib/supabase/data-client";
+import { getSessionIdentity, getUploaderProfileId, requireStaff } from "@/lib/auth/identity";
+import { isPreviewAllowed } from "@/lib/auth/preview";
 import { DEFAULT_ORG_ID } from "@/lib/types";
-
-// Use admin client for all server actions to bypass RLS in preview mode
-const createClient = () => Promise.resolve(createAdminClient());
 import type { DocumentVisibility } from "@/lib/types";
+
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+type ActionClient = SupabaseClient<any, any, any>;
+
+/**
+ * Guarded staff action client.
+ * - Requires a verified staff session (requireStaff returns a synthetic staff
+ *   identity in allowed local preview, never in production).
+ * - Returns the preview-aware data client: real sessions get the SESSION-SCOPED
+ *   client (RLS applies); only sessionless allowed local preview gets the
+ *   service-role client so the demo works against hardened RLS.
+ */
+async function createStaffClient(): Promise<ActionClient> {
+  const staff = await requireStaff();
+  if (!staff) throw new Error("Unauthorized: staff access required");
+  return (await createDataClient()) as ActionClient;
+}
+
+// Alias kept for the remaining call sites — same guarded, session-scoped client.
+const createClient = createStaffClient;
 
 /* ─── Agent Actions ─── */
 
 export async function createAgentAction(formData: FormData) {
-  const supabase = await createClient();
+  const supabase = await createStaffClient();
 
   const first_name = formData.get("first_name") as string;
   const last_name = formData.get("last_name") as string;
@@ -70,7 +90,7 @@ export async function createAgentAction(formData: FormData) {
 }
 
 export async function updateAgentAction(formData: FormData) {
-  const supabase = await createClient();
+  const supabase = await createStaffClient();
 
   const id = formData.get("id") as string;
   if (!id) return { error: "Agent ID is required" };
@@ -349,7 +369,7 @@ export async function updateContactAction(formData: FormData) {
 }
 
 export async function createProjectAction(formData: FormData) {
-  const supabase = await createClient();
+  const supabase = await createStaffClient();
 
   const name = formData.get("name") as string;
   const address = formData.get("address") as string;
@@ -422,7 +442,7 @@ export async function createProjectAction(formData: FormData) {
 }
 
 export async function updateProjectAction(formData: FormData) {
-  const supabase = await createClient();
+  const supabase = await createStaffClient();
 
   const id = formData.get("id") as string;
   if (!id) return { error: "Project ID is required" };
@@ -458,7 +478,7 @@ export async function updateProjectAction(formData: FormData) {
 }
 
 export async function createStockAction(formData: FormData) {
-  const supabase = await createClient();
+  const supabase = await createStaffClient();
 
   const project_id = formData.get("project_id") as string;
   const lot_number = formData.get("lot_number") as string;
@@ -515,7 +535,7 @@ export async function createStockAction(formData: FormData) {
 }
 
 export async function updateStockAction(formData: FormData) {
-  const supabase = await createClient();
+  const supabase = await createStaffClient();
 
   const id = formData.get("id") as string;
   const project_id = formData.get("project_id") as string;
@@ -573,7 +593,7 @@ export async function updateStockAction(formData: FormData) {
 /* ─── Assign Stock to Agent ─── */
 
 export async function assignStockToAgentAction(formData: FormData) {
-  const supabase = await createClient();
+  const supabase = await createStaffClient();
 
   const agent_id = formData.get("agent_id") as string;
   const stock_ids = formData.getAll("stock_ids") as string[];
@@ -612,7 +632,8 @@ export async function assignStockToAgentAction(formData: FormData) {
 /* ─── Document Actions ─── */
 
 export async function uploadProjectDocumentAction(formData: FormData) {
-  const supabase = await createClient();
+  const supabase = await createStaffClient();
+  const uploadedBy = await getUploaderProfileId();
 
   const project_id = formData.get("project_id") as string;
   const category_id = formData.get("category_id") as string;
@@ -644,7 +665,7 @@ export async function uploadProjectDocumentAction(formData: FormData) {
     file_size: file.size,
     mime_type: file.type || "application/octet-stream",
     visibility,
-    uploaded_by: null,
+    uploaded_by: uploadedBy,
   });
 
   if (dbError) return { error: dbError.message };
@@ -681,7 +702,7 @@ export async function uploadProjectDocumentAction(formData: FormData) {
 }
 
 export async function deleteProjectDocumentAction(formData: FormData) {
-  const supabase = await createClient();
+  const supabase = await createStaffClient();
 
   const id = formData.get("id") as string;
   const file_path = formData.get("file_path") as string;
@@ -702,8 +723,6 @@ export async function deleteProjectDocumentAction(formData: FormData) {
 }
 
 export async function uploadClientDocumentAction(formData: FormData) {
-  const supabase = await createClient();
-
   const contact_id = formData.get("contact_id") as string;
   const document_type = formData.get("document_type") as string;
   const file = formData.get("file") as File;
@@ -711,6 +730,30 @@ export async function uploadClientDocumentAction(formData: FormData) {
   if (!file || !contact_id || !document_type) {
     return { error: "File, contact, and document type are required" };
   }
+
+  // This action serves both the staff contact page and the agent client page.
+  // Identity is derived server-side (never from the form): staff upload for
+  // any contact in their org; agents only for their own referred clients.
+  // RLS remains the backstop for the insert either way.
+  const identity = await getSessionIdentity();
+  if (!identity && !isPreviewAllowed()) {
+    return { error: "Unauthorized" };
+  }
+  if (identity?.role === "client") {
+    return { error: "Unauthorized" };
+  }
+  const supabase = await createDataClient();
+  if (identity?.role === "agent") {
+    const { data: contact } = await supabase
+      .from("contacts")
+      .select("referring_agent_id")
+      .eq("id", contact_id)
+      .maybeSingle();
+    if (!contact || contact.referring_agent_id !== identity.profileId) {
+      return { error: "You can only upload documents for your own clients" };
+    }
+  }
+  const uploadedBy = await getUploaderProfileId();
 
   if (file.size > 50 * 1024 * 1024) {
     return { error: "File size exceeds 50MB limit" };
@@ -734,7 +777,7 @@ export async function uploadClientDocumentAction(formData: FormData) {
     file_size: file.size,
     mime_type: file.type || "application/octet-stream",
     visibility: "staff",
-    uploaded_by: null,
+    uploaded_by: uploadedBy,
   });
 
   if (dbError) return { error: dbError.message };
@@ -744,7 +787,7 @@ export async function uploadClientDocumentAction(formData: FormData) {
 }
 
 export async function deleteClientDocumentAction(formData: FormData) {
-  const supabase = await createClient();
+  const supabase = await createStaffClient();
 
   const id = formData.get("id") as string;
   const file_path = formData.get("file_path") as string;
@@ -830,7 +873,8 @@ export async function linkContactToStockAction(formData: FormData) {
 /* ─── Multi-file Upload Action ─── */
 
 export async function uploadMultipleProjectDocumentsAction(formData: FormData) {
-  const supabase = await createClient();
+  const supabase = await createStaffClient();
+  const uploadedBy = await getUploaderProfileId();
 
   const project_id = formData.get("project_id") as string;
   const category_id = formData.get("category_id") as string;
@@ -864,7 +908,7 @@ export async function uploadMultipleProjectDocumentsAction(formData: FormData) {
       file_size: file.size,
       mime_type: file.type || "application/octet-stream",
       visibility,
-      uploaded_by: null,
+      uploaded_by: uploadedBy,
     });
 
     if (dbError) return { error: dbError.message };
@@ -906,7 +950,7 @@ export async function uploadMultipleProjectDocumentsAction(formData: FormData) {
 /* ─── Milestone Actions ─── */
 
 export async function updateMilestoneAction(formData: FormData) {
-  const supabase = await createClient();
+  const supabase = await createStaffClient();
 
   const id = formData.get("id") as string;
   const status = formData.get("status") as string;
@@ -939,7 +983,7 @@ export async function updateMilestoneAction(formData: FormData) {
 }
 
 export async function createMilestoneAction(formData: FormData) {
-  const supabase = await createClient();
+  const supabase = await createStaffClient();
 
   const project_id = formData.get("project_id") as string;
   const name = formData.get("name") as string;
@@ -978,7 +1022,7 @@ export async function createMilestoneAction(formData: FormData) {
 }
 
 export async function deleteMilestoneAction(formData: FormData) {
-  const supabase = await createClient();
+  const supabase = await createStaffClient();
 
   const id = formData.get("id") as string;
   const project_id = formData.get("project_id") as string;
@@ -999,7 +1043,7 @@ export async function deleteMilestoneAction(formData: FormData) {
 /* ─── Progress Media Actions ─── */
 
 export async function uploadProgressPictureAction(formData: FormData) {
-  const supabase = await createClient();
+  const supabase = await createStaffClient();
 
   const project_id = formData.get("project_id") as string;
   const files = formData.getAll("files") as File[];
@@ -1052,7 +1096,7 @@ export async function uploadProgressPictureAction(formData: FormData) {
 }
 
 export async function deleteProgressPictureAction(formData: FormData) {
-  const supabase = await createClient();
+  const supabase = await createStaffClient();
 
   const project_id = formData.get("project_id") as string;
   const url = formData.get("url") as string;
@@ -1097,7 +1141,7 @@ export async function deleteProgressPictureAction(formData: FormData) {
 }
 
 export async function uploadProgressVideoAction(formData: FormData) {
-  const supabase = await createClient();
+  const supabase = await createStaffClient();
 
   const project_id = formData.get("project_id") as string;
   const files = formData.getAll("files") as File[];
@@ -1146,7 +1190,7 @@ export async function uploadProgressVideoAction(formData: FormData) {
 }
 
 export async function deleteProgressVideoAction(formData: FormData) {
-  const supabase = await createClient();
+  const supabase = await createStaffClient();
 
   const project_id = formData.get("project_id") as string;
   const url = formData.get("url") as string;
@@ -1396,7 +1440,7 @@ export async function logCommunicationAction(formData: FormData) {
 }
 
 export async function createEmailTemplateAction(formData: FormData) {
-  const supabase = await createClient();
+  const supabase = await createStaffClient();
 
   const name = formData.get("name") as string;
   const subject = formData.get("subject") as string;
@@ -1422,7 +1466,7 @@ export async function createEmailTemplateAction(formData: FormData) {
 }
 
 export async function updateEmailTemplateAction(formData: FormData) {
-  const supabase = await createClient();
+  const supabase = await createStaffClient();
 
   const id = formData.get("id") as string;
   const name = formData.get("name") as string;
@@ -1446,7 +1490,7 @@ export async function updateEmailTemplateAction(formData: FormData) {
 }
 
 export async function deleteEmailTemplateAction(formData: FormData) {
-  const supabase = await createClient();
+  const supabase = await createStaffClient();
 
   const id = formData.get("id") as string;
   if (!id) return { error: "Template ID is required" };
@@ -1509,5 +1553,148 @@ export async function updatePipelineStageAction(formData: FormData) {
   revalidatePath("/");
   revalidatePath("/agent");
   revalidatePath(`/contacts/${contact_id}`);
+  return { success: true };
+}
+
+/* ─── Deal Spine Actions (staff) ───
+ * All mutations go through SECURITY DEFINER RPCs which enforce org isolation
+ * and stage rules inside the database. The app-layer requireStaff() gate is
+ * defense in depth, not the authority.
+ */
+
+async function requireStaffForDeals(): Promise<{ error: string } | null> {
+  const staff = await requireStaff();
+  if (!staff) return { error: "Unauthorized: staff access required" };
+  return null;
+}
+
+function revalidateDealSurfaces(projectId?: string | null) {
+  revalidatePath("/");
+  revalidatePath("/stock");
+  if (projectId) revalidatePath(`/projects/${projectId}`);
+}
+
+export async function placeDealHoldAction(formData: FormData) {
+  const denied = await requireStaffForDeals();
+  if (denied) return denied;
+
+  const stockId = formData.get("stock_id") as string;
+  const contactId = formData.get("contact_id") as string;
+  if (!stockId || !contactId) return { error: "Lot and buyer are required" };
+
+  const holdHoursRaw = formData.get("hold_hours") as string | null;
+  const holdHours = holdHoursRaw ? parseInt(holdHoursRaw, 10) : 72;
+  const actingAgentId = (formData.get("acting_agent_id") as string) || null;
+
+  const { rpcPlaceHold } = await import("@/lib/data/deals");
+  const result = await rpcPlaceHold({
+    stockId,
+    contactId,
+    holdHours: Number.isFinite(holdHours) ? holdHours : 72,
+    actingAgentId,
+  });
+
+  if (!result.ok) return { error: result.error || "Could not place hold" };
+  revalidateDealSurfaces((formData.get("project_id") as string) || null);
+  return { success: true, deal: result.data };
+}
+
+export async function releaseDealHoldAction(formData: FormData) {
+  const denied = await requireStaffForDeals();
+  if (denied) return denied;
+
+  const dealId = formData.get("deal_id") as string;
+  if (!dealId) return { error: "Deal is required" };
+
+  const { rpcReleaseHold } = await import("@/lib/data/deals");
+  const result = await rpcReleaseHold(
+    dealId,
+    (formData.get("reason") as string) || null
+  );
+
+  if (!result.ok) return { error: result.error || "Could not release hold" };
+  revalidateDealSurfaces((formData.get("project_id") as string) || null);
+  return { success: true };
+}
+
+export async function advanceDealStageAction(formData: FormData) {
+  const denied = await requireStaffForDeals();
+  if (denied) return denied;
+
+  const dealId = formData.get("deal_id") as string;
+  const targetStage = formData.get("target_stage") as string;
+  if (!dealId || !targetStage) return { error: "Deal and stage are required" };
+
+  const allowed = ["contract_issued", "exchanged", "settled", "cancelled"];
+  if (!allowed.includes(targetStage)) return { error: "Invalid stage" };
+
+  const reason = (formData.get("reason") as string) || null;
+  if (targetStage === "cancelled" && !reason) {
+    return { error: "A reason is required to cancel a deal" };
+  }
+
+  const { rpcAdvanceStage } = await import("@/lib/data/deals");
+  const result = await rpcAdvanceStage(
+    dealId,
+    targetStage as "contract_issued" | "exchanged" | "settled" | "cancelled",
+    reason
+  );
+
+  if (!result.ok) return { error: result.error || "Could not update stage" };
+  revalidateDealSurfaces((formData.get("project_id") as string) || null);
+  return { success: true };
+}
+
+export async function updateDealDetailsAction(formData: FormData) {
+  const denied = await requireStaffForDeals();
+  if (denied) return denied;
+
+  const dealId = formData.get("deal_id") as string;
+  if (!dealId) return { error: "Deal is required" };
+
+  // Only fields on the DB-side whitelist; the RPC rejects anything else.
+  const dateFields = [
+    "contract_issued_date",
+    "exchanged_date",
+    "sunset_date",
+    "cooling_off_ends_date",
+    "deposit_due_date",
+    "deposit_paid_date",
+    "finance_due_date",
+    "firb_due_date",
+    "settlement_target_date",
+    "settlement_actual_date",
+  ];
+  const enumFields = ["deposit_status", "finance_status", "firb_status"];
+
+  const updates: Record<string, unknown> = {};
+  for (const field of dateFields) {
+    if (formData.has(field)) {
+      const v = (formData.get(field) as string) || null;
+      updates[field] = v;
+    }
+  }
+  for (const field of enumFields) {
+    if (formData.has(field)) {
+      const v = (formData.get(field) as string) || null;
+      if (v) updates[field] = v;
+    }
+  }
+  if (formData.has("deposit_amount")) {
+    const raw = (formData.get("deposit_amount") as string) || "";
+    updates.deposit_amount = raw ? parseFloat(raw) : null;
+  }
+  if (formData.has("trust_receipt_document_id")) {
+    updates.trust_receipt_document_id =
+      (formData.get("trust_receipt_document_id") as string) || null;
+  }
+
+  if (Object.keys(updates).length === 0) return { error: "Nothing to update" };
+
+  const { rpcStaffUpdateDeal } = await import("@/lib/data/deals");
+  const result = await rpcStaffUpdateDeal(dealId, updates);
+
+  if (!result.ok) return { error: result.error || "Could not update deal" };
+  revalidateDealSurfaces((formData.get("project_id") as string) || null);
   return { success: true };
 }

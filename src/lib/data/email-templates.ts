@@ -1,9 +1,9 @@
-import { createClient } from "@/lib/supabase/server";
+import { createDataClient } from "@/lib/supabase/data-client";
 import type { EmailTemplate, EmailTemplateCategory } from "@/lib/types";
 import { DEFAULT_ORG_ID } from "@/lib/types";
 
 export async function getEmailTemplates(category?: EmailTemplateCategory): Promise<EmailTemplate[]> {
-  const supabase = await createClient();
+  const supabase = await createDataClient();
   let query = supabase
     .from("email_templates")
     .select("*")
@@ -25,7 +25,7 @@ export async function getEmailTemplates(category?: EmailTemplateCategory): Promi
 }
 
 export async function getEmailTemplate(id: string): Promise<EmailTemplate | null> {
-  const supabase = await createClient();
+  const supabase = await createDataClient();
   const { data, error } = await supabase
     .from("email_templates")
     .select("*")
@@ -42,7 +42,7 @@ export async function createTemplate(data: {
   body: string;
   category: EmailTemplateCategory;
 }): Promise<{ error?: string }> {
-  const supabase = await createClient();
+  const supabase = await createDataClient();
   const { error } = await supabase.from("email_templates").insert({
     org_id: DEFAULT_ORG_ID,
     name: data.name,
@@ -64,7 +64,7 @@ export async function updateTemplate(
     category: EmailTemplateCategory;
   }
 ): Promise<{ error?: string }> {
-  const supabase = await createClient();
+  const supabase = await createDataClient();
   const { error } = await supabase
     .from("email_templates")
     .update({
@@ -81,7 +81,7 @@ export async function updateTemplate(
 }
 
 export async function deleteTemplate(id: string): Promise<{ error?: string }> {
-  const supabase = await createClient();
+  const supabase = await createDataClient();
   const { error } = await supabase
     .from("email_templates")
     .delete()

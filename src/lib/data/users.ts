@@ -1,8 +1,8 @@
-import { createClient } from "@/lib/supabase/server";
+import { createDataClient } from "@/lib/supabase/data-client";
 import type { UserProfile, UserRole } from "@/lib/auth/roles";
 
 export async function getUserProfile(email: string): Promise<UserProfile | null> {
-  const supabase = await createClient();
+  const supabase = await createDataClient();
   const { data, error } = await supabase
     .from("user_profiles")
     .select("*")
@@ -19,7 +19,7 @@ export async function getUserRole(email: string): Promise<UserRole> {
 }
 
 export async function getUsers(orgId: string): Promise<UserProfile[]> {
-  const supabase = await createClient();
+  const supabase = await createDataClient();
   const { data, error } = await supabase
     .from("user_profiles")
     .select("*")

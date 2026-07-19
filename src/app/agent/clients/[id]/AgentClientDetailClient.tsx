@@ -300,6 +300,7 @@ export function AgentClientDetailClient({ contact, agents, clientDocuments, agen
             router.refresh();
           }}
           onCancel={() => setShowEditModal(false)}
+          scope="agent"
         />
       </Modal>
     </div>

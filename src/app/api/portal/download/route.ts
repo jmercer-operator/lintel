@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { createClient } from "@/lib/supabase/server";
+import { createAuthorizedSignedUrl } from "@/lib/auth/document-access";
 
 export async function GET(request: NextRequest) {
   const { searchParams } = new URL(request.url);
@@ -10,14 +10,9 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ error: "Missing bucket or path" }, { status: 400 });
   }
 
-  const supabase = await createClient();
-  const { data, error } = await supabase.storage
-    .from(bucket)
-    .createSignedUrl(path, 3600); // 1 hour
-
-  if (error || !data) {
-    return NextResponse.json({ error: "Failed to generate download URL" }, { status: 500 });
+  const result = await createAuthorizedSignedUrl(bucket, path);
+  if ("error" in result) {
+    return NextResponse.json({ error: result.error }, { status: result.status });
   }
-
-  return NextResponse.json({ url: data.signedUrl });
+  return NextResponse.json({ url: result.url });
 }

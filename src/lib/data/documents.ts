@@ -1,4 +1,4 @@
-import { createClient } from "@/lib/supabase/server";
+import { createDataClient } from "@/lib/supabase/data-client";
 
 export interface DocumentCategory {
   id: string;
@@ -20,6 +20,8 @@ export interface ProjectDocument {
   mime_type: string;
   visibility: "staff" | "agent" | "client";
   uploaded_by: string | null;
+  /** Resolved display name for uploaded_by (staff profile or agent). */
+  uploader_name?: string | null;
   created_at: string;
   updated_at: string;
 }
@@ -35,13 +37,50 @@ export interface ClientDocument {
   mime_type: string;
   visibility: "staff" | "agent" | "client";
   uploaded_by: string | null;
+  /** Resolved display name for uploaded_by (staff profile or agent). */
+  uploader_name?: string | null;
   notes: string | null;
   created_at: string;
   updated_at: string;
 }
 
+/**
+ * Resolve uploaded_by ids (user_profiles.id for staff, agents.id for agents)
+ * to display names. Missing/unknown ids stay null — never fabricated.
+ */
+async function withUploaderNames<T extends { uploaded_by: string | null }>(
+  docs: T[]
+): Promise<(T & { uploader_name: string | null })[]> {
+  const ids = [...new Set(docs.map((d) => d.uploaded_by).filter((id): id is string => !!id))];
+  if (ids.length === 0) {
+    return docs.map((d) => ({ ...d, uploader_name: null }));
+  }
+
+  const supabase = await createDataClient();
+  const [profilesRes, agentsRes] = await Promise.all([
+    supabase.from("user_profiles").select("id, first_name, last_name, email").in("id", ids),
+    supabase.from("agents").select("id, first_name, last_name").in("id", ids),
+  ]);
+
+  const nameMap = new Map<string, string>();
+  for (const a of (agentsRes.data || []) as Array<{ id: string; first_name: string; last_name: string }>) {
+    nameMap.set(a.id, `${a.first_name} ${a.last_name}`.trim());
+  }
+  for (const p of (profilesRes.data || []) as Array<{
+    id: string; first_name: string | null; last_name: string | null; email: string;
+  }>) {
+    const name = `${p.first_name || ""} ${p.last_name || ""}`.trim();
+    nameMap.set(p.id, name || p.email);
+  }
+
+  return docs.map((d) => ({
+    ...d,
+    uploader_name: d.uploaded_by ? nameMap.get(d.uploaded_by) || null : null,
+  }));
+}
+
 export async function getDocumentCategories(orgId: string): Promise<DocumentCategory[]> {
-  const supabase = await createClient();
+  const supabase = await createDataClient();
   const { data, error } = await supabase
     .from("document_categories")
     .select("*")
@@ -53,7 +92,7 @@ export async function getDocumentCategories(orgId: string): Promise<DocumentCate
 }
 
 export async function getProjectDocuments(projectId: string): Promise<ProjectDocument[]> {
-  const supabase = await createClient();
+  const supabase = await createDataClient();
   const { data, error } = await supabase
     .from("project_documents")
     .select("*")
@@ -61,13 +100,13 @@ export async function getProjectDocuments(projectId: string): Promise<ProjectDoc
     .order("created_at", { ascending: false });
 
   if (error) throw error;
-  return (data || []) as ProjectDocument[];
+  return withUploaderNames((data || []) as ProjectDocument[]);
 }
 
 export async function getProjectDocumentCounts(orgId: string): Promise<
   Array<{ project_id: string; project_name: string; category_id: string; category_name: string; count: number }>
 > {
-  const supabase = await createClient();
+  const supabase = await createDataClient();
 
   // Get all project documents with project and category info
   const { data: docs, error: docsErr } = await supabase
@@ -111,7 +150,7 @@ export async function getProjectDocumentCounts(orgId: string): Promise<
 }
 
 export async function getClientDocuments(contactId: string): Promise<ClientDocument[]> {
-  const supabase = await createClient();
+  const supabase = await createDataClient();
   const { data, error } = await supabase
     .from("client_documents")
     .select("*")
@@ -119,11 +158,11 @@ export async function getClientDocuments(contactId: string): Promise<ClientDocum
     .order("created_at", { ascending: false });
 
   if (error) throw error;
-  return (data || []) as ClientDocument[];
+  return withUploaderNames((data || []) as ClientDocument[]);
 }
 
 export async function getClientDocumentsByProject(projectId: string): Promise<(ClientDocument & { contact_name: string })[]> {
-  const supabase = await createClient();
+  const supabase = await createDataClient();
 
   // Get contacts linked to stock in this project
   const { data: contactStock } = await supabase
@@ -151,14 +190,15 @@ export async function getClientDocumentsByProject(projectId: string): Promise<(C
 
   const contactMap = new Map((contacts || []).map((c: { id: string; first_name: string; last_name: string }) => [c.id, `${c.first_name} ${c.last_name}`]));
 
-  return (docs || []).map((d) => ({
-    ...(d as ClientDocument),
+  const withNames = await withUploaderNames((docs || []) as ClientDocument[]);
+  return withNames.map((d) => ({
+    ...d,
     contact_name: contactMap.get(d.contact_id) || "Unknown",
   }));
 }
 
 export async function createSignedUrl(bucket: string, filePath: string): Promise<string | null> {
-  const supabase = await createClient();
+  const supabase = await createDataClient();
   const { data, error } = await supabase.storage
     .from(bucket)
     .createSignedUrl(filePath, 3600); // 1 hour
@@ -175,6 +215,8 @@ export function formatFileSize(bytes: number): string {
 
 export const CLIENT_DOCUMENT_TYPES = [
   "Signed Contract",
+  "Exchanged Contract",
+  "Trust Receipt",
   "ID Document",
   "Solicitor Letter",
   "Deposit Receipt",

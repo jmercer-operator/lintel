@@ -1,8 +1,8 @@
-import { createClient } from "@/lib/supabase/server";
+import { createDataClient } from "@/lib/supabase/data-client";
 import type { BuyerInterest } from "@/lib/types";
 
 export async function getBuyerInterests(contactId: string): Promise<BuyerInterest[]> {
-  const supabase = await createClient();
+  const supabase = await createDataClient();
 
   const { data, error } = await supabase
     .from("buyer_interests")
@@ -41,7 +41,7 @@ export async function createBuyerInterest(data: {
   interest_level: string;
   notes?: string;
 }): Promise<{ error?: string }> {
-  const supabase = await createClient();
+  const supabase = await createDataClient();
 
   const { error } = await supabase.from("buyer_interests").insert({
     contact_id: data.contact_id,
@@ -58,7 +58,7 @@ export async function createBuyerInterest(data: {
 }
 
 export async function removeBuyerInterest(id: string): Promise<{ error?: string }> {
-  const supabase = await createClient();
+  const supabase = await createDataClient();
 
   const { error } = await supabase
     .from("buyer_interests")

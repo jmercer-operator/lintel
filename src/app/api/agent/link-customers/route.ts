@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
-import { createClient } from "@/lib/supabase/server";
+import { createDataClient } from "@/lib/supabase/data-client";
+import { getAgentApiContext } from "@/lib/auth/identity";
 
 export async function POST(request: Request) {
   try {
@@ -12,7 +13,36 @@ export async function POST(request: Request) {
       );
     }
 
-    const supabase = await createClient();
+    const ctx = await getAgentApiContext();
+    if (!ctx) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
+    const supabase = await createDataClient();
+
+    // Non-privileged agents may only link their own contacts to their own lots.
+    if (!ctx.isPrivileged) {
+      const { data: stock } = await supabase
+        .from("stock")
+        .select("id, agent_id, project_id")
+        .eq("id", stock_id)
+        .maybeSingle();
+
+      if (!stock || stock.agent_id !== ctx.agentId || stock.project_id !== project_id) {
+        return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+      }
+
+      const { data: ownedContacts } = await supabase
+        .from("contacts")
+        .select("id")
+        .in("id", contact_ids)
+        .eq("referring_agent_id", ctx.agentId);
+
+      const ownedIds = new Set((ownedContacts || []).map((c) => c.id));
+      if (contact_ids.some((id: string) => !ownedIds.has(id))) {
+        return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+      }
+    }
 
     // Check which contacts are already linked to this stock
     const { data: existingLinks } = await supabase
@@ -47,11 +77,25 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: linkError.message }, { status: 500 });
     }
 
-    // Auto-change stock status to EOI
-    await supabase
-      .from("stock")
-      .update({ status: "EOI", updated_at: new Date().toISOString() })
-      .eq("id", stock_id);
+    // Auto-change stock status to EOI. Agent sessions have no direct stock
+    // UPDATE policy (phase 6) — they must go through the hardened RPC.
+    if (ctx.isPrivileged) {
+      await supabase
+        .from("stock")
+        .update({ status: "EOI", updated_at: new Date().toISOString() })
+        .eq("id", stock_id);
+    } else {
+      const { error: rpcError } = await supabase.rpc("lintel_agent_update_lot_status", {
+        target_stock_id: stock_id,
+        target_status: "EOI",
+      });
+      if (rpcError) {
+        return NextResponse.json(
+          { error: `Customers linked but status change failed: ${rpcError.message}` },
+          { status: 500 }
+        );
+      }
+    }
 
     // Auto-add project slug tag to each contact
     const { data: project } = await supabase

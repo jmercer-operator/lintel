@@ -70,6 +70,7 @@ export function Sidebar() {
         },
         { label: "Documents", icon: <DocumentsIcon />, href: "/documents" },
         { label: "Reports", icon: <ReportsIcon />, href: "/reports" },
+        { label: "Audit Log", icon: <AuditIcon />, href: "/audit" },
       ],
     },
 
@@ -90,9 +91,9 @@ export function Sidebar() {
     >
       {/* Logo */}
       <div className={`flex items-center ${collapsed ? "justify-center" : "justify-between"} px-5 h-16 border-b border-border`}>
-        {!collapsed && <a href="/"><Logo size="md" /></a>}
+        {!collapsed && <Link href="/"><Logo size="md" /></Link>}
         {collapsed && (
-          <a href="/" className="text-xl font-extrabold text-emerald-primary select-none">L</a>
+          <Link href="/" className="text-xl font-extrabold text-emerald-primary select-none">L</Link>
         )}
       </div>
 
@@ -257,6 +258,15 @@ function OrgIcon() {
     <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
       <rect x="2" y="7" width="20" height="14" rx="2" ry="2" />
       <path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16" />
+    </svg>
+  );
+}
+
+function AuditIcon() {
+  return (
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
+      <polyline points="9 12 11 14 15 10" />
     </svg>
   );
 }

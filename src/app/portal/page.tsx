@@ -1,19 +1,23 @@
-import { createClient } from "@/lib/supabase/server";
+import { redirect } from "next/navigation";
+import { createDataClient } from "@/lib/supabase/data-client";
+import { getEffectiveContactId } from "@/lib/auth/identity";
 import type { Contact, StockItem, Project, Agent } from "@/lib/types";
 import { getProjectMilestones } from "@/lib/data/milestones";
+import { getBuyerDealSummaries } from "@/lib/data/deals";
 import PortalClient from "./PortalClient";
 
-// Demo: David Chen
-const DEMO_CONTACT_ID = "d0000000-0000-0000-0000-000000000001";
-
 export default async function PortalPage() {
-  const supabase = await createClient();
+  // Session-derived contact; demo contact only in allowed local preview.
+  const contactId = await getEffectiveContactId();
+  if (!contactId) redirect("/login");
+
+  const supabase = await createDataClient();
 
   // 1. Get contact
   const { data: contact } = await supabase
     .from("contacts")
     .select("*")
-    .eq("id", DEMO_CONTACT_ID)
+    .eq("id", contactId)
     .single();
 
   if (!contact) {
@@ -36,7 +40,7 @@ export default async function PortalPage() {
   const { data: contactStock } = await supabase
     .from("contact_stock")
     .select("stock_id, project_id")
-    .eq("contact_id", DEMO_CONTACT_ID);
+    .eq("contact_id", contactId);
 
   let stock: StockItem | null = null;
   let project: Project | null = null;
@@ -86,8 +90,15 @@ export default async function PortalPage() {
   const { data: clientDocuments } = await supabase
     .from("client_documents")
     .select("*")
-    .eq("contact_id", DEMO_CONTACT_ID)
+    .eq("contact_id", contactId)
     .order("created_at", { ascending: false });
+
+  // 8. The buyer's own deal for their lot (safe columns only; RLS scoped).
+  // Fails closed to null when the deal-spine migration is not applied.
+  const dealsRes = await getBuyerDealSummaries(contactId);
+  const deal = stock
+    ? dealsRes.data.find((d) => d.stock_id === stock!.id) || null
+    : dealsRes.data[0] || null;
 
   return (
     <PortalClient
@@ -97,6 +108,7 @@ export default async function PortalPage() {
       agent={agent}
       milestones={milestones}
       clientDocuments={clientDocuments || []}
+      deal={deal}
     />
   );
 }

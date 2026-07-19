@@ -44,6 +44,7 @@ export function AgentReserveLotModal({ open, onClose, projects, agents, agentCon
   const [search, setSearch] = useState("");
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [holdSuccess, setHoldSuccess] = useState<{ contactName: string; expiresAt: string | null } | null>(null);
 
   // Reset on open
   useEffect(() => {
@@ -54,6 +55,7 @@ export function AgentReserveLotModal({ open, onClose, projects, agents, agentCon
       setCustomerMode("choose");
       setSearch("");
       setError(null);
+      setHoldSuccess(null);
     }
   }, [open]);
 
@@ -70,25 +72,49 @@ export function AgentReserveLotModal({ open, onClose, projects, agents, agentCon
       .catch(() => setLoadingLots(false));
   }, [selectedProject, agentId]);
 
-  async function handleLinkExisting(contactId: string) {
+  async function handleLinkExisting(contactId: string, contactName: string) {
     if (!selectedLot) return;
     setSaving(true);
     setError(null);
     try {
-      // Update lot status to Under Contract
-      await fetch("/api/agent/update-lot-status", {
+      const payload = JSON.stringify({
+        stock_id: selectedLot.id,
+        project_id: selectedProject!.id,
+        contact_ids: [contactId],
+      });
+
+      // Atomic timed reservation hold (server-side RPC enforces one active
+      // hold per lot). If the deal spine isn't enabled in this environment,
+      // fall back to the legacy link + EOI flow — never fake a timed hold.
+      const res = await fetch("/api/agent/reserve-lot", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ stockId: selectedLot.id, status: "Under Contract", agentId }),
+        body: payload,
       });
-      // Link customer to lot
-      await fetch("/api/agent/link-customer", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ stockId: selectedLot.id, contactId, projectId: selectedProject!.id }),
-      });
-      router.refresh();
-      onClose();
+      const data = await res.json().catch(() => ({}));
+
+      if (res.ok) {
+        setHoldSuccess({
+          contactName,
+          expiresAt: (data.deal?.hold_expires_at as string) || null,
+        });
+        router.refresh();
+      } else if (res.status === 503 && data.notEnabled) {
+        const legacy = await fetch("/api/agent/link-customers", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: payload,
+        });
+        const legacyData = await legacy.json().catch(() => ({}));
+        if (!legacy.ok) {
+          setError(legacyData.error || "Failed to reserve lot");
+        } else {
+          setHoldSuccess({ contactName, expiresAt: null });
+          router.refresh();
+        }
+      } else {
+        setError(data.error || "Failed to reserve lot");
+      }
     } catch {
       setError("Failed to reserve lot");
     }
@@ -107,6 +133,32 @@ export function AgentReserveLotModal({ open, onClose, projects, agents, agentCon
     }>
       {error && (
         <div className="mb-4 px-4 py-3 bg-red-50 border border-red-200 rounded-xl text-red-700 text-sm">{error}</div>
+      )}
+
+      {/* Reservation confirmed */}
+      {holdSuccess && (
+        <div className="text-center py-4 space-y-3">
+          <div className="mx-auto w-12 h-12 rounded-full bg-emerald-primary/10 flex items-center justify-center">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#1A9E6F" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+              <polyline points="20 6 9 17 4 12" />
+            </svg>
+          </div>
+          <p className="text-sm font-semibold text-heading">
+            Lot {selectedLot?.lot_number} reserved for {holdSuccess.contactName}
+          </p>
+          {holdSuccess.expiresAt ? (
+            <p className="text-xs text-secondary">
+              Hold expires{" "}
+              {new Date(holdSuccess.expiresAt).toLocaleString("en-AU", {
+                day: "numeric", month: "short", year: "numeric", hour: "numeric", minute: "2-digit",
+              })}
+              . If contracts aren&apos;t progressed by then, the lot returns to Available.
+            </p>
+          ) : (
+            <p className="text-xs text-secondary">Customer linked and lot moved to EOI.</p>
+          )}
+          <Button onClick={onClose}>Done</Button>
+        </div>
       )}
 
       {/* Step 1: Select Project */}
@@ -208,12 +260,13 @@ export function AgentReserveLotModal({ open, onClose, projects, agents, agentCon
               onClose();
             }}
             onCancel={() => setCustomerMode("choose")}
+            scope="agent"
           />
         </div>
       )}
 
       {/* Existing Customer Search */}
-      {step === "customer" && customerMode === "existing" && (
+      {!holdSuccess && step === "customer" && customerMode === "existing" && (
         <div>
           <button onClick={() => setCustomerMode("choose")} className="text-xs text-emerald-primary hover:underline mb-3 cursor-pointer">← Back</button>
           <input
@@ -230,7 +283,7 @@ export function AgentReserveLotModal({ open, onClose, projects, agents, agentCon
               filteredContacts.map(c => (
                 <button
                   key={c.id}
-                  onClick={() => handleLinkExisting(c.id)}
+                  onClick={() => handleLinkExisting(c.id, `${c.first_name} ${c.last_name}`)}
                   disabled={saving}
                   className="w-full text-left flex items-center gap-3 px-3 py-2.5 rounded-lg hover:bg-bg-alt transition-colors cursor-pointer disabled:opacity-50"
                 >

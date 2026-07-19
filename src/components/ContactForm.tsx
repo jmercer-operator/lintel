@@ -4,6 +4,7 @@ import { useState, useTransition, useRef, useEffect } from "react";
 import { Input } from "@/components/Input";
 import { Button } from "@/components/Button";
 import { createContactAction, updateContactAction } from "@/lib/actions";
+import { agentCreateContactAction, agentUpdateContactAction } from "@/lib/agent-actions";
 import type { Contact, Agent } from "@/lib/types";
 
 interface ContactFormProps {
@@ -14,6 +15,8 @@ interface ContactFormProps {
   defaultStockId?: string;
   defaultProjectId?: string;
   defaultAgentId?: string;
+  /** "agent" routes submissions through session-scoped agent actions. */
+  scope?: "staff" | "agent";
 }
 
 const TABS = ["Personal", "Address", "ID & Employment", "Legal", "Preferences"] as const;
@@ -21,7 +24,7 @@ const TABS = ["Personal", "Address", "ID & Employment", "Legal", "Preferences"] 
 const ID_TYPES = ["passport", "drivers_license", "national_id", "other"];
 const CONTACT_METHODS = ["email", "phone", "sms", "whatsapp"];
 
-export function ContactForm({ contact, agents, onSuccess, onCancel, defaultStockId, defaultProjectId, defaultAgentId }: ContactFormProps) {
+export function ContactForm({ contact, agents, onSuccess, onCancel, defaultStockId, defaultProjectId, defaultAgentId, scope = "staff" }: ContactFormProps) {
   const [isPending, startTransition] = useTransition();
   const [error, setError] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState(0);
@@ -93,7 +96,14 @@ export function ContactForm({ contact, agents, onSuccess, onCancel, defaultStock
     }
 
     startTransition(async () => {
-      const action = isEditing ? updateContactAction : createContactAction;
+      const action =
+        scope === "agent"
+          ? isEditing
+            ? agentUpdateContactAction
+            : agentCreateContactAction
+          : isEditing
+            ? updateContactAction
+            : createContactAction;
       const result = await action(formData);
       if (result.error) setError(result.error);
       else onSuccess();

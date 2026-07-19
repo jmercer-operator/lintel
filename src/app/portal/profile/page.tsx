@@ -1,33 +1,17 @@
-import { createClient } from "@/lib/supabase/server";
+import { redirect } from "next/navigation";
+import { createDataClient } from "@/lib/supabase/data-client";
+import { getEffectiveContactId } from "@/lib/auth/identity";
 import type { Contact } from "@/lib/types";
 import ProfileClient from "./ProfileClient";
-
-// Demo: David Chen — in production, get from authenticated user
-const DEMO_CONTACT_ID = "d0000000-0000-0000-0000-000000000001";
 
 export const dynamic = "force-dynamic";
 
 export default async function PortalProfilePage() {
-  const supabase = await createClient();
+  // Session-derived contact; demo contact only in allowed local preview.
+  const contactId = await getEffectiveContactId();
+  if (!contactId) redirect("/login");
 
-  // Try to get the authenticated user's contact record
-  let contactId = DEMO_CONTACT_ID;
-
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-
-  if (user) {
-    const { data: contact } = await supabase
-      .from("contacts")
-      .select("id")
-      .eq("auth_user_id", user.id)
-      .single();
-
-    if (contact) {
-      contactId = contact.id;
-    }
-  }
+  const supabase = await createDataClient();
 
   const { data: contact } = await supabase
     .from("contacts")

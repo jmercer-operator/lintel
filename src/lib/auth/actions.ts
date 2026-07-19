@@ -1,9 +1,7 @@
 "use server";
 
 import { createClient } from "@/lib/supabase/server";
-import { createAdminClient } from "@/lib/supabase/admin";
 import { redirect } from "next/navigation";
-import { revalidatePath } from "next/cache";
 import type { UserRole } from "./roles";
 
 export interface AuthResult {
@@ -14,6 +12,8 @@ export interface AuthResult {
 /**
  * Sign in with email + password.
  * Determines the user's role and returns the redirect path.
+ * Fails closed: users that cannot be mapped to staff/agent/client are
+ * signed out and rejected.
  */
 export async function signIn(
   email: string,
@@ -37,6 +37,15 @@ export async function signIn(
   // Determine role by looking up auth_user_id in tables
   const role = await getUserRoleByAuthId(data.user.id);
 
+  if (!role) {
+    // Unknown user — do not grant any access.
+    await supabase.auth.signOut();
+    return {
+      error:
+        "Your account is not provisioned for access. Please contact your administrator.",
+    };
+  }
+
   // Redirect based on role
   switch (role) {
     case "agent":
@@ -44,7 +53,6 @@ export async function signIn(
     case "client":
       return { redirectTo: "/portal" };
     case "staff":
-    default:
       return { redirectTo: "/" };
   }
 }
@@ -59,11 +67,13 @@ export async function signOut() {
 }
 
 /**
- * Get the role for a given auth user ID by checking user_profiles, agents, contacts.
+ * Get the role for a given auth user ID by checking user_profiles, agents,
+ * contacts. Returns null when the user cannot be mapped (fail closed — the
+ * caller must deny access; unknown users are NOT treated as staff).
  */
 export async function getUserRoleByAuthId(
   authUserId: string
-): Promise<UserRole> {
+): Promise<UserRole | null> {
   const supabase = await createClient();
 
   // Check user_profiles first (staff)
@@ -71,7 +81,7 @@ export async function getUserRoleByAuthId(
     .from("user_profiles")
     .select("role")
     .eq("auth_user_id", authUserId)
-    .single();
+    .maybeSingle();
 
   if (profile?.role === "staff") return "staff";
 
@@ -80,7 +90,7 @@ export async function getUserRoleByAuthId(
     .from("agents")
     .select("id")
     .eq("auth_user_id", authUserId)
-    .single();
+    .maybeSingle();
 
   if (agent) return "agent";
 
@@ -89,19 +99,22 @@ export async function getUserRoleByAuthId(
     .from("contacts")
     .select("id")
     .eq("auth_user_id", authUserId)
-    .single();
+    .maybeSingle();
 
   if (contact) return "client";
 
-  // Default to staff if found in user_profiles with any role
-  if (profile) return (profile.role as UserRole) || "staff";
+  // Profile exists with an explicit non-staff role we recognise
+  if (profile?.role === "agent" || profile?.role === "client") {
+    return profile.role as UserRole;
+  }
 
-  return "staff";
+  return null;
 }
 
 /**
  * Get the current authenticated user's role and details.
- * Returns null if not authenticated (preview mode or no session).
+ * Returns null if not authenticated or if the user cannot be mapped to a
+ * known staff/agent/client identity.
  */
 export async function getAuthenticatedUser(): Promise<{
   id: string;
@@ -118,6 +131,7 @@ export async function getAuthenticatedUser(): Promise<{
   if (!user) return null;
 
   const role = await getUserRoleByAuthId(user.id);
+  if (!role) return null;
 
   // Get the profile/agent/contact ID for data scoping
   let profileId: string | undefined;
@@ -127,21 +141,21 @@ export async function getAuthenticatedUser(): Promise<{
       .from("agents")
       .select("id")
       .eq("auth_user_id", user.id)
-      .single();
+      .maybeSingle();
     profileId = data?.id;
   } else if (role === "client") {
     const { data } = await supabase
       .from("contacts")
       .select("id")
       .eq("auth_user_id", user.id)
-      .single();
+      .maybeSingle();
     profileId = data?.id;
   } else {
     const { data } = await supabase
       .from("user_profiles")
       .select("id")
       .eq("auth_user_id", user.id)
-      .single();
+      .maybeSingle();
     profileId = data?.id;
   }
 
@@ -151,104 +165,4 @@ export async function getAuthenticatedUser(): Promise<{
     role,
     profileId,
   };
-}
-
-/**
- * Create test auth users and link them to existing records.
- */
-export async function createTestUsers(): Promise<{
-  results: Array<{ email: string; success: boolean; error?: string }>;
-}> {
-  const admin = createAdminClient();
-  const results: Array<{ email: string; success: boolean; error?: string }> =
-    [];
-
-  const testUsers = [
-    {
-      email: "am@mproperty.melbourne",
-      password: "Lintel2026!",
-      role: "staff" as const,
-      table: "user_profiles",
-      matchField: "email",
-    },
-    {
-      email: "sarah.mitchell@example.com",
-      password: "Lintel2026!",
-      role: "agent" as const,
-      table: "agents",
-      matchField: "email",
-    },
-    {
-      email: "david.chen@example.com",
-      password: "Lintel2026!",
-      role: "client" as const,
-      table: "contacts",
-      matchField: "email",
-    },
-  ];
-
-  for (const testUser of testUsers) {
-    try {
-      // Check if auth user already exists
-      const { data: existingUsers } = await admin.auth.admin.listUsers();
-      const existing = existingUsers?.users?.find(
-        (u) => u.email === testUser.email
-      );
-
-      let authUserId: string;
-
-      if (existing) {
-        authUserId = existing.id;
-        // Update password
-        await admin.auth.admin.updateUserById(authUserId, {
-          password: testUser.password,
-          email_confirm: true,
-        });
-      } else {
-        // Create the auth user
-        const { data: newUser, error: createError } =
-          await admin.auth.admin.createUser({
-            email: testUser.email,
-            password: testUser.password,
-            email_confirm: true,
-          });
-
-        if (createError || !newUser.user) {
-          results.push({
-            email: testUser.email,
-            success: false,
-            error: createError?.message || "Failed to create user",
-          });
-          continue;
-        }
-
-        authUserId = newUser.user.id;
-      }
-
-      // Link auth_user_id in the corresponding table
-      const { error: updateError } = await admin
-        .from(testUser.table)
-        .update({ auth_user_id: authUserId })
-        .eq(testUser.matchField, testUser.email);
-
-      if (updateError) {
-        results.push({
-          email: testUser.email,
-          success: false,
-          error: `Auth user created but DB link failed: ${updateError.message}`,
-        });
-        continue;
-      }
-
-      results.push({ email: testUser.email, success: true });
-    } catch (err) {
-      results.push({
-        email: testUser.email,
-        success: false,
-        error: err instanceof Error ? err.message : "Unknown error",
-      });
-    }
-  }
-
-  return { results };
 }

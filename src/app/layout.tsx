@@ -17,6 +17,11 @@ const jetbrainsMono = JetBrains_Mono({
 export const metadata: Metadata = {
   title: "LINTEL — All projects. One view.",
   description: "Cloud-based CRM for property developers. Stock management, sales pipeline, agent portal.",
+  // Private app: keep out of search indexes while in closed beta.
+  robots: {
+    index: false,
+    follow: false,
+  },
 };
 
 export default function RootLayout({

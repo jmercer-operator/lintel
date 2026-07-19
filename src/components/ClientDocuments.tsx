@@ -19,6 +19,7 @@ export interface ClientDocument {
   mime_type: string;
   visibility: "staff" | "agent" | "client";
   uploaded_by: string | null;
+  uploader_name?: string | null;
   notes: string | null;
   created_at: string;
   updated_at: string;
@@ -26,6 +27,8 @@ export interface ClientDocument {
 
 const CLIENT_DOCUMENT_TYPES = [
   "Signed Contract",
+  "Exchanged Contract",
+  "Trust Receipt",
   "ID Document",
   "Solicitor Letter",
   "Deposit Receipt",
@@ -242,6 +245,7 @@ function DocumentRow({
         <p className="text-sm text-heading truncate">{doc.file_name}</p>
         <p className="text-[10px] text-muted">
           {formatFileSize(doc.file_size)} · {new Date(doc.created_at).toLocaleDateString("en-AU", { day: "numeric", month: "short" })}
+          {doc.uploader_name ? ` · Uploaded by ${doc.uploader_name}` : ""}
         </p>
       </div>
       <button

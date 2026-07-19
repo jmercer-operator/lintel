@@ -1,4 +1,4 @@
-import { createClient } from "@/lib/supabase/server";
+import { createDataClient } from "@/lib/supabase/data-client";
 
 export type MilestoneStatus = "completed" | "in_progress" | "upcoming";
 
@@ -18,7 +18,7 @@ export interface ProjectMilestone {
 }
 
 export async function getProjectMilestones(projectId: string): Promise<ProjectMilestone[]> {
-  const supabase = await createClient();
+  const supabase = await createDataClient();
   const { data, error } = await supabase
     .from("project_milestones")
     .select("*")
@@ -33,7 +33,7 @@ export async function updateMilestone(
   id: string,
   updates: { status?: MilestoneStatus; target_date?: string | null; completed_date?: string | null }
 ): Promise<void> {
-  const supabase = await createClient();
+  const supabase = await createDataClient();
   const { error } = await supabase
     .from("project_milestones")
     .update({ ...updates, updated_at: new Date().toISOString() })

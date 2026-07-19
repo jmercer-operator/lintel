@@ -1,6 +1,7 @@
 "use server";
 
-import { createClient } from "@/lib/supabase/server";
+import { createDataClient } from "@/lib/supabase/data-client";
+import { getEffectiveContactId } from "@/lib/auth/identity";
 import { revalidatePath } from "next/cache";
 
 export async function updateClientProfile(
@@ -15,7 +16,13 @@ export async function updateClientProfile(
     residential_postcode: string;
   }
 ): Promise<{ success: boolean; error?: string }> {
-  const supabase = await createClient();
+  // Clients may only update their own contact record.
+  const sessionContactId = await getEffectiveContactId();
+  if (!sessionContactId || sessionContactId !== contactId) {
+    return { success: false, error: "Unauthorized" };
+  }
+
+  const supabase = await createDataClient();
 
   const { error } = await supabase
     .from("contacts")

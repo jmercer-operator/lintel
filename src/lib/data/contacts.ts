@@ -1,4 +1,4 @@
-import { createClient } from "@/lib/supabase/server";
+import { createDataClient } from "@/lib/supabase/data-client";
 import type { Contact, ContactWithLinkedStock, ContactClassification, StockStatus } from "@/lib/types";
 
 const CUSTOMER_STATUSES: StockStatus[] = ["Under Contract", "Exchanged", "Settled"];
@@ -19,7 +19,7 @@ export async function getContacts(filter?: {
   projectId?: string;
   source?: string;
 }): Promise<ContactWithLinkedStock[]> {
-  const supabase = await createClient();
+  const supabase = await createDataClient();
 
   let query = supabase
     .from("contacts")
@@ -55,8 +55,8 @@ export async function getContacts(filter?: {
   const stockIds = [...new Set((contactStock || []).map((cs) => cs.stock_id))];
   const projectIds = [...new Set((contactStock || []).map((cs) => cs.project_id))];
 
-  let stockMap: Record<string, { lot_number: string; status: StockStatus; price: number | null }> = {};
-  let projectMap: Record<string, string> = {};
+  const stockMap: Record<string, { lot_number: string; status: StockStatus; price: number | null }> = {};
+  const projectMap: Record<string, string> = {};
 
   if (stockIds.length > 0) {
     const { data: stockItems } = await supabase
@@ -114,7 +114,7 @@ export async function getContacts(filter?: {
 }
 
 export async function getContact(id: string): Promise<ContactWithLinkedStock | null> {
-  const supabase = await createClient();
+  const supabase = await createDataClient();
 
   const { data: contact, error } = await supabase
     .from("contacts")
@@ -132,8 +132,8 @@ export async function getContact(id: string): Promise<ContactWithLinkedStock | n
   const stockIds = (contactStock || []).map((cs) => cs.stock_id);
   const projectIds = [...new Set((contactStock || []).map((cs) => cs.project_id))];
 
-  let stockMap: Record<string, { lot_number: string; status: StockStatus; price: number | null }> = {};
-  let projectMap: Record<string, string> = {};
+  const stockMap: Record<string, { lot_number: string; status: StockStatus; price: number | null }> = {};
+  const projectMap: Record<string, string> = {};
 
   if (stockIds.length > 0) {
     const { data: stockItems } = await supabase

@@ -20,7 +20,10 @@ const ROLE_KEY = "lintel-role-preview";
  * Check if preview mode is enabled (client-side).
  */
 export function isPreviewMode(): boolean {
-  return process.env.NEXT_PUBLIC_PREVIEW_MODE === "true";
+  return (
+    process.env.NEXT_PUBLIC_PREVIEW_MODE === "true" &&
+    process.env.NODE_ENV !== "production"
+  );
 }
 
 /**
@@ -46,9 +49,10 @@ export function setCurrentUserRole(role: UserRole): void {
   localStorage.setItem(ROLE_KEY, role);
 }
 
-/** Default agent for preview mode */
+/** Default identities for allowed local preview ONLY (see lib/auth/preview.ts) */
 export const PREVIEW_AGENT_ID = "c0000000-0000-0000-0000-000000000001";
 export const PREVIEW_ORG_ID = "a0000000-0000-0000-0000-000000000001";
+export const PREVIEW_CONTACT_ID = "d0000000-0000-0000-0000-000000000001";
 
 /* ─── Permission helpers ─── */
 

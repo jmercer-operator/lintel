@@ -362,6 +362,7 @@ export interface Activity {
   created_at: string;
   // Joined fields
   agent_name?: string;
+  contact_name?: string;
 }
 
 export interface FollowUp {

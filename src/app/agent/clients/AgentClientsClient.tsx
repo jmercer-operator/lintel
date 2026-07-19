@@ -163,6 +163,7 @@ export function AgentClientsClient({ clients, agents, agentId }: Props) {
           }}
           onCancel={() => setShowAddClient(false)}
           defaultAgentId={agentId}
+          scope="agent"
         />
       </Modal>
     </div>

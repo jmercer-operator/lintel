@@ -1,6 +1,8 @@
 import { getAllStock } from "@/lib/data/stock";
 import { getProjects } from "@/lib/data/projects";
 import { getAgents } from "@/lib/data/agents";
+import { getContacts } from "@/lib/data/contacts";
+import { getStaffDealAnnotations } from "@/lib/data/deals";
 import { StockClient } from "./StockClient";
 
 interface PageProps {
@@ -22,7 +24,7 @@ export default async function StockPage({ searchParams }: PageProps) {
     search: params.search || "",
   };
 
-  const [stock, projects, agents] = await Promise.all([
+  const [stock, projects, agents, contacts] = await Promise.all([
     getAllStock({
       projectId: filters.projectId || undefined,
       status: filters.status !== "All" ? filters.status : undefined,
@@ -31,7 +33,10 @@ export default async function StockPage({ searchParams }: PageProps) {
     }),
     getProjects(),
     getAgents(),
+    getContacts(),
   ]);
+
+  const dealAnnotations = await getStaffDealAnnotations(stock.map((s) => s.id));
 
   return (
     <StockClient
@@ -39,6 +44,12 @@ export default async function StockPage({ searchParams }: PageProps) {
       projects={projects}
       agents={agents}
       filters={filters}
+      dealsAvailable={dealAnnotations.available}
+      dealsByStockId={dealAnnotations.byStockId}
+      contactOptions={contacts.map((c) => ({
+        id: c.id,
+        name: `${c.first_name} ${c.last_name}`.trim(),
+      }))}
     />
   );
 }

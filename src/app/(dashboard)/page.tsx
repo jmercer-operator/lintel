@@ -2,6 +2,7 @@ import { getProjects, getAggregateStats } from "@/lib/data/projects";
 import { getStockForDashboard } from "@/lib/data/stock";
 import { getPipelineStats, getPipelineContacts } from "@/lib/data/pipeline";
 import { getFollowUps } from "@/lib/data/follow-ups";
+import { getRecentActivities } from "@/lib/data/activities";
 import { DashboardClient } from "./DashboardClient";
 
 interface PageProps {
@@ -11,13 +12,14 @@ interface PageProps {
 export default async function DashboardPage({ searchParams }: PageProps) {
   const { project: projectId, status } = await searchParams;
 
-  const [projects, stats, stock, pipelineStats, pipelineContacts, followUps] = await Promise.all([
+  const [projects, stats, stock, pipelineStats, pipelineContacts, followUps, recentActivities] = await Promise.all([
     getProjects(),
     getAggregateStats(projectId),
     getStockForDashboard(projectId, status),
     getPipelineStats(),
     getPipelineContacts(),
     getFollowUps(undefined, { todayOnly: true }),
+    getRecentActivities(8),
   ]);
 
   return (
@@ -30,6 +32,7 @@ export default async function DashboardPage({ searchParams }: PageProps) {
       pipelineStats={pipelineStats}
       pipelineContacts={pipelineContacts}
       followUps={followUps}
+      recentActivities={recentActivities}
     />
   );
 }

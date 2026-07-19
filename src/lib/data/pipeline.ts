@@ -1,8 +1,8 @@
-import { createClient } from "@/lib/supabase/server";
+import { createDataClient } from "@/lib/supabase/data-client";
 import type { PipelineStage, PipelineContact } from "@/lib/types";
 
 export async function getPipelineStats(): Promise<Record<PipelineStage, number>> {
-  const supabase = await createClient();
+  const supabase = await createDataClient();
 
   const { data, error } = await supabase
     .from("contacts")
@@ -32,7 +32,7 @@ export async function getPipelineStats(): Promise<Record<PipelineStage, number>>
 }
 
 export async function getPipelineContacts(stage?: PipelineStage, agentId?: string): Promise<PipelineContact[]> {
-  const supabase = await createClient();
+  const supabase = await createDataClient();
 
   let query = supabase
     .from("contacts")
@@ -95,7 +95,7 @@ export async function updatePipelineStage(
   nextAction?: string,
   nextActionDate?: string
 ): Promise<{ error?: string }> {
-  const supabase = await createClient();
+  const supabase = await createDataClient();
 
   const { error } = await supabase
     .from("contacts")

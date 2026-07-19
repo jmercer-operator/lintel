@@ -1,4 +1,4 @@
-import { createClient } from "@/lib/supabase/server";
+import { createDataClient } from "@/lib/supabase/data-client";
 import type {
   PortfolioStats,
   ProjectSalesBreakdown,
@@ -13,7 +13,7 @@ import type {
 const SOLD_STATUSES: StockStatus[] = ["Under Contract", "Exchanged", "Settled"];
 
 export async function getPortfolioStats(): Promise<PortfolioStats> {
-  const supabase = await createClient();
+  const supabase = await createDataClient();
 
   const { data: stock, error } = await supabase
     .from("stock")
@@ -72,7 +72,7 @@ export async function getPortfolioStats(): Promise<PortfolioStats> {
 }
 
 export async function getProjectSalesBreakdown(): Promise<ProjectSalesBreakdown[]> {
-  const supabase = await createClient();
+  const supabase = await createDataClient();
 
   const { data: stock, error } = await supabase
     .from("stock")
@@ -136,7 +136,7 @@ export async function getProjectSalesBreakdown(): Promise<ProjectSalesBreakdown[
 }
 
 export async function getAgentPerformance(): Promise<AgentPerformanceRow[]> {
-  const supabase = await createClient();
+  const supabase = await createDataClient();
 
   // Get all stock with agent info
   const { data: stock, error: stockErr } = await supabase
@@ -207,7 +207,7 @@ export async function getAgentPerformance(): Promise<AgentPerformanceRow[]> {
 }
 
 export async function getCommissionSummary(): Promise<CommissionSummary> {
-  const supabase = await createClient();
+  const supabase = await createDataClient();
 
   const { data: stock, error: stockErr } = await supabase
     .from("stock")
@@ -254,7 +254,7 @@ export async function getCommissionSummary(): Promise<CommissionSummary> {
 }
 
 export async function getSettlementPipeline(): Promise<SettlementRow[]> {
-  const supabase = await createClient();
+  const supabase = await createDataClient();
 
   // Get exchanged stock with settlement dates
   const { data: stock, error } = await supabase
@@ -307,7 +307,7 @@ export async function getSettlementPipeline(): Promise<SettlementRow[]> {
 }
 
 export async function getSalesHeatmapData(): Promise<HeatmapProject[]> {
-  const supabase = await createClient();
+  const supabase = await createDataClient();
 
   const { data: stock, error } = await supabase
     .from("stock")

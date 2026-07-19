@@ -1,4 +1,4 @@
-import { createClient } from "@/lib/supabase/server";
+import { createDataClient } from "@/lib/supabase/data-client";
 import type { StockItem, StockStats, Project, ProjectWithStats } from "@/lib/types";
 import type { ProjectDocument, DocumentCategory } from "@/lib/data/documents";
 import type { ProjectMilestone } from "@/lib/data/milestones";
@@ -10,7 +10,7 @@ import type { ProjectMilestone } from "@/lib/data/milestones";
 export async function getAgentStock(agentId: string): Promise<
   (StockItem & { project_name: string; project_logo_url: string | null })[]
 > {
-  const supabase = await createClient();
+  const supabase = await createDataClient();
 
   const { data: stock, error } = await supabase
     .from("stock")
@@ -46,7 +46,7 @@ export async function getAgentStock(agentId: string): Promise<
  * allLots = total across all statuses
  */
 export async function getAgentStockStats(agentId: string): Promise<StockStats & { activeLots: number; allLots: number }> {
-  const supabase = await createClient();
+  const supabase = await createDataClient();
 
   const { data: stock, error } = await supabase
     .from("stock")
@@ -78,7 +78,7 @@ export async function getAgentStockStats(agentId: string): Promise<StockStats & 
  * Get projects assigned to an agent via agent_projects table.
  */
 export async function getAgentProjects(agentId: string): Promise<ProjectWithStats[]> {
-  const supabase = await createClient();
+  const supabase = await createDataClient();
 
   const { data: assignments, error: apError } = await supabase
     .from("agent_projects")
@@ -104,7 +104,7 @@ export async function getAgentProjects(agentId: string): Promise<ProjectWithStat
 }
 
 async function getProjectsByIds(ids: string[]): Promise<ProjectWithStats[]> {
-  const supabase = await createClient();
+  const supabase = await createDataClient();
 
   const { data: projects, error } = await supabase
     .from("projects")
@@ -158,7 +158,7 @@ export async function getAgentClients(agentId: string): Promise<
     linked_lots: Array<{ lot_number: string; project_name: string; status: string }>;
   }>
 > {
-  const supabase = await createClient();
+  const supabase = await createDataClient();
 
   // 1. Get all stock IDs assigned to this agent
   const { data: agentStock } = await supabase
@@ -208,8 +208,8 @@ export async function getAgentClients(agentId: string): Promise<
   const stockIds = [...new Set((contactStock || []).map((cs) => cs.stock_id))];
   const projectIds = [...new Set((contactStock || []).map((cs) => cs.project_id))];
 
-  let stockMap: Record<string, { lot_number: string; status: string }> = {};
-  let projectMap: Record<string, string> = {};
+  const stockMap: Record<string, { lot_number: string; status: string }> = {};
+  const projectMap: Record<string, string> = {};
 
   if (stockIds.length > 0) {
     const { data: stockItems } = await supabase
@@ -248,7 +248,7 @@ export async function getAgentClients(agentId: string): Promise<
  * Check if a stock item has a linked customer via contact_stock.
  */
 export async function stockHasLinkedCustomer(stockId: string): Promise<boolean> {
-  const supabase = await createClient();
+  const supabase = await createDataClient();
   const { data, error } = await supabase
     .from("contact_stock")
     .select("id")
@@ -263,7 +263,7 @@ export async function stockHasLinkedCustomer(stockId: string): Promise<boolean> 
  * Get agent details for profile page.
  */
 export async function getAgentForProfile(agentId: string): Promise<Record<string, unknown> | null> {
-  const supabase = await createClient();
+  const supabase = await createDataClient();
   const { data, error } = await supabase
     .from("agents")
     .select("*")
@@ -287,7 +287,7 @@ export async function updateAgentProfile(agentId: string, updates: {
   state?: string | null;
   postcode?: string | null;
 }): Promise<{ error?: string }> {
-  const supabase = await createClient();
+  const supabase = await createDataClient();
   const { error } = await supabase
     .from("agents")
     .update({ ...updates, updated_at: new Date().toISOString() })
@@ -301,7 +301,7 @@ export async function updateAgentProfile(agentId: string, updates: {
  * Get agent-visible project documents (visibility = 'agent' or 'client').
  */
 export async function getAgentProjectDocuments(projectId: string): Promise<ProjectDocument[]> {
-  const supabase = await createClient();
+  const supabase = await createDataClient();
   const { data, error } = await supabase
     .from("project_documents")
     .select("*")
@@ -317,7 +317,7 @@ export async function getAgentProjectDocuments(projectId: string): Promise<Proje
  * Get project with stats for agent view.
  */
 export async function getAgentProjectDetail(projectId: string): Promise<ProjectWithStats | null> {
-  const supabase = await createClient();
+  const supabase = await createDataClient();
 
   const { data: project, error } = await supabase
     .from("projects")
@@ -351,7 +351,7 @@ export async function getAgentProjectDetail(projectId: string): Promise<ProjectW
  * Get all stock for a project (agent view — shows all lots, not just agent's).
  */
 export async function getProjectStockForAgent(projectId: string): Promise<StockItem[]> {
-  const supabase = await createClient();
+  const supabase = await createDataClient();
   const { data, error } = await supabase
     .from("stock")
     .select("*")

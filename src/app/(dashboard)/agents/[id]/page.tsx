@@ -2,7 +2,7 @@ import { notFound } from "next/navigation";
 import { getAgentWithStats, getAgentProjectsWithCommission } from "@/lib/data/agents";
 import { getProjects } from "@/lib/data/projects";
 import { AgentDetailClient } from "./AgentDetailClient";
-import { createClient } from "@/lib/supabase/server";
+import { createDataClient } from "@/lib/supabase/data-client";
 
 interface PageProps {
   params: Promise<{ id: string }>;
@@ -19,7 +19,7 @@ export default async function AgentDetailPage({ params }: PageProps) {
   if (!agent) notFound();
 
   // Get stock for this agent
-  const supabase = await createClient();
+  const supabase = await createDataClient();
   const { data: stock } = await supabase
     .from("stock")
     .select("*, projects:project_id(name)")

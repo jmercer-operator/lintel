@@ -8,15 +8,19 @@ import { ProjectLogo } from "@/components/ProjectLogo";
 import { PipelineBoard } from "@/components/PipelineBoard";
 import { FollowUpsList } from "@/components/FollowUpsList";
 import { ALL_STATUSES, formatPrice, formatArea, timeAgo } from "@/lib/types";
-import type { ProjectWithStats, StockStats, StockStatus, PipelineStage, PipelineContact, FollowUp } from "@/lib/types";
+import type { ProjectWithStats, StockStats, StockStatus, PipelineStage, PipelineContact, FollowUp, Activity, ActivityType } from "@/lib/types";
 import type { StockWithProject } from "@/lib/data/stock";
 
-const recentActivity = [
-  { id: 1, text: "Lot 102 received an Expression of Interest", agent: "James T.", time: "5 hours ago", icon: "📝" },
-  { id: 2, text: "Lot 306 settlement completed", agent: "Priya K.", time: "1 day ago", icon: "✅" },
-  { id: 3, text: "New contact added: David Chen", agent: "Sarah M.", time: "2 days ago", icon: "👤" },
-  { id: 4, text: "Lot 204 moved to Under Contract", agent: "Priya K.", time: "2 days ago", icon: "📋" },
-];
+const ACTIVITY_ICONS: Record<ActivityType, string> = {
+  call: "📞",
+  email: "✉️",
+  meeting: "🤝",
+  inspection: "🏠",
+  note: "📝",
+  document: "📄",
+  status_change: "📋",
+  system: "⚙️",
+};
 
 const metricConfig = [
   { key: "total" as const, label: "Total Stock", color: "#1E2B26" },
@@ -35,6 +39,7 @@ interface DashboardClientProps {
   pipelineStats: Record<PipelineStage, number>;
   pipelineContacts: PipelineContact[];
   followUps: FollowUp[];
+  recentActivities: Activity[];
 }
 
 interface ProjectGroup {
@@ -80,6 +85,7 @@ export function DashboardClient({
   pipelineStats,
   pipelineContacts,
   followUps,
+  recentActivities,
 }: DashboardClientProps) {
   const router = useRouter();
   const [expandedProjects, setExpandedProjects] = useState<Set<string>>(new Set());
@@ -280,19 +286,28 @@ export function DashboardClient({
         <div className="px-4 py-4 sm:px-6 border-b border-border">
           <h2 className="text-lg font-semibold text-heading">Recent Activity</h2>
         </div>
-        <div className="divide-y divide-border">
-          {recentActivity.map((activity) => (
-            <div key={activity.id} className="px-4 sm:px-6 py-4 flex items-start gap-3 hover:bg-bg-alt transition-colors">
-              <span className="text-lg flex-shrink-0 mt-0.5">{activity.icon}</span>
-              <div className="flex-1 min-w-0">
-                <p className="text-sm text-body">{activity.text}</p>
-                <p className="text-xs text-secondary mt-0.5">
-                  {activity.agent} · {activity.time}
-                </p>
+        {recentActivities.length === 0 ? (
+          <div className="px-4 sm:px-6 py-8 text-center">
+            <p className="text-sm text-secondary">No activity recorded yet</p>
+            <p className="text-xs text-muted mt-1">Contact and lot activity will appear here as it happens.</p>
+          </div>
+        ) : (
+          <div className="divide-y divide-border">
+            {recentActivities.map((activity) => (
+              <div key={activity.id} className="px-4 sm:px-6 py-4 flex items-start gap-3 hover:bg-bg-alt transition-colors">
+                <span className="text-lg flex-shrink-0 mt-0.5">{ACTIVITY_ICONS[activity.type] || "📝"}</span>
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm text-body">{activity.title}</p>
+                  <p className="text-xs text-secondary mt-0.5">
+                    {[activity.contact_name, activity.agent_name, timeAgo(activity.created_at)]
+                      .filter(Boolean)
+                      .join(" · ")}
+                  </p>
+                </div>
               </div>
-            </div>
-          ))}
-        </div>
+            ))}
+          </div>
+        )}
       </Card>
     </div>
   );
