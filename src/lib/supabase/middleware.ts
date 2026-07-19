@@ -42,6 +42,12 @@ export async function updateSession(request: NextRequest) {
     return supabaseResponse;
   }
 
+  // Scheduler requests carry no Supabase session; /api/cron/* routes fail
+  // closed on their own via the CRON_SECRET bearer check.
+  if (pathname.startsWith("/api/cron")) {
+    return supabaseResponse;
+  }
+
   // Public routes — always accessible
   if (
     pathname.startsWith("/login") ||
